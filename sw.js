@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mis-finanzas-v2';
+const CACHE_NAME = 'mis-finanzas-v3';
 
 // Archivos propios de la app (app shell)
 const APP_SHELL = [
