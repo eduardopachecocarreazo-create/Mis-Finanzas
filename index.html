@@ -646,7 +646,7 @@ function CategoryBadge({ cat, size = 34, t }) {
 /* ---------------------------------- BARRA SUPERIOR ---------------------------------- */
 function TopBar({ title, subtitle, t, onSettings, centered }) {
   return (
-    <div style={{ padding: '22px 20px 14px', display: 'flex', alignItems: 'flex-start', justifyContent: centered ? 'center' : 'space-between' }}>
+    <div style={{ padding: 'calc(22px + env(safe-area-inset-top)) 20px 14px', display: 'flex', alignItems: 'flex-start', justifyContent: centered ? 'center' : 'space-between' }}>
       <div style={{ textAlign: centered ? 'center' : 'left' }}>
         <div style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 22, color: t.text, fontWeight: 600 }}>{title}</div>
         {subtitle && <div style={{ fontSize: 13, color: t.textMuted, marginTop: 3 }}>{subtitle}</div>}
@@ -673,10 +673,19 @@ function AccountMiniCard({ account, balance, t, settings }) {
   );
 }
 
-function InicioScreen({ data, t, goHistorial, openSheet, onQuickAdd }) {
+const BALANCE_VIEWS = [
+  { value: 'total', label: 'Total' },
+  { value: 'week', label: 'Semana' },
+  { value: 'month', label: 'Mes' },
+  { value: 'year', label: 'Año' },
+];
+
+function InicioScreen({ data, setData, t, goHistorial, openSheet, onQuickAdd }) {
   const { transactions, categories, settings, accounts, recurringTransactions, debts, savingsGoals, budgets } = data;
   const now = new Date();
   const curMonthKey = `${now.getFullYear()}-${pad(now.getMonth()+1)}`;
+  const balanceView = settings.homeBalanceView || 'total';
+  const setBalanceView = (v) => setData(d => ({ ...d, settings: { ...d.settings, homeBalanceView: v } }));
 
   const freqCount = {};
   transactions.filter(tx=>tx.type==='expense').forEach(tx=>{ freqCount[tx.category] = (freqCount[tx.category]||0) + 1; });
@@ -684,11 +693,16 @@ function InicioScreen({ data, t, goHistorial, openSheet, onQuickAdd }) {
     .map(([catId])=>categories.find(c=>c.id===catId)).filter(Boolean);
 
   const monthTx = transactions.filter(tx => monthKeyOf(tx.date) === curMonthKey);
-  const income = monthTx.filter(t2 => t2.type === 'income').reduce((s,t2)=>s+Number(t2.amount),0);
-  const expense = monthTx.filter(t2 => t2.type === 'expense').reduce((s,t2)=>s+Number(t2.amount),0);
   const visibleAccounts = accounts.filter(a=>!a.archived);
   const balance = visibleAccounts.filter(a=>a.includeInTotal).reduce((s,a)=> s + getAccountBalance(a.id, transactions, accounts), 0);
+
+  const homeRange = balanceView === 'total' ? null : getPeriodRange(balanceView, 0);
+  const homeTx = homeRange ? transactions.filter(tx => tx.date >= homeRange.from && tx.date <= homeRange.to) : monthTx;
+  const income = homeTx.filter(t2 => t2.type === 'income').reduce((s,t2)=>s+Number(t2.amount),0);
+  const expense = homeTx.filter(t2 => t2.type === 'expense').reduce((s,t2)=>s+Number(t2.amount),0);
   const savingsRate = income > 0 ? ((income - expense) / income) * 100 : 0;
+  const displayBalance = balanceView === 'total' ? balance : (income - expense);
+  const balanceLabel = balanceView==='total' ? 'Balance total' : balanceView==='week' ? 'Balance de la semana' : balanceView==='month' ? 'Balance del mes' : 'Balance del año';
   const totalDebt = (debts || []).reduce((s,d)=>s+Number(d.currentBalance||0),0);
   const activeGoals = (savingsGoals || []).filter(g=>getGoalStats(g).percent < 100).length;
   const streak = getStreak(transactions);
@@ -730,10 +744,11 @@ function InicioScreen({ data, t, goHistorial, openSheet, onQuickAdd }) {
 
   const recent = [...transactions].sort((a,b)=> b.date.localeCompare(a.date) || b.createdAt-a.createdAt).slice(0,5);
 
-  let mood = 'Vas por buen camino este mes.';
+  const periodWord = balanceView==='week' ? 'esta semana' : balanceView==='year' ? 'este año' : 'este mes';
+  let mood = `Vas por buen camino ${periodWord}.`;
   if (income === 0 && expense === 0) mood = 'Registra tu primer movimiento para empezar.';
-  else if (savingsRate >= 20) mood = 'Vas muy bien este mes — sigue así.';
-  else if (savingsRate < 0) mood = 'Este mes gastaste más de lo que ingresó.';
+  else if (savingsRate >= 20) mood = `Vas muy bien ${periodWord} — sigue así.`;
+  else if (savingsRate < 0) mood = `Gastaste más de lo que ingresó ${periodWord}.`;
 
   return (
     <div>
@@ -787,9 +802,21 @@ function InicioScreen({ data, t, goHistorial, openSheet, onQuickAdd }) {
           position: 'relative', boxShadow: `0 10px 30px ${t.shadow}`
         }}>
           <div style={{ height: 2, background: `linear-gradient(90deg, transparent, ${t.accent}, transparent)`, marginBottom: 16, opacity: 0.6 }} />
-          <div style={{ fontSize: 11, letterSpacing: '0.14em', color: t.textMuted, textTransform: 'uppercase', fontWeight: 600 }}>Balance total</div>
+
+          <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+            {BALANCE_VIEWS.map(v=>(
+              <button key={v.value} onClick={()=>setBalanceView(v.value)}
+                style={{ padding: '4px 10px', borderRadius: 12, cursor: 'pointer', fontSize: 11, fontWeight: 600,
+                  border: `1px solid ${balanceView===v.value ? t.accent : t.border}`, background: balanceView===v.value ? t.accent+'22' : 'transparent',
+                  color: balanceView===v.value ? t.accent : t.textMuted }}>
+                {v.label}
+              </button>
+            ))}
+          </div>
+
+          <div style={{ fontSize: 11, letterSpacing: '0.14em', color: t.textMuted, textTransform: 'uppercase', fontWeight: 600 }}>{balanceLabel}</div>
           <div style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 36, color: t.text, fontWeight: 600, marginTop: 6, fontVariantNumeric: 'tabular-nums' }}>
-            {formatMoney(balance, settings.currency)}
+            {formatMoney(displayBalance, settings.currency)}
           </div>
           <div style={{ fontSize: 12.5, color: t.textMuted, marginTop: 6 }}>{mood}</div>
 
@@ -1270,6 +1297,7 @@ function DebtsContent({ data, t, onOpenModal }) {
                 <div style={{ fontSize: 11.5, color: t.textMuted }}>
                   {formatMoney(debt.currentBalance, settings.currency)} pendiente{debt.interestRate ? ` · ${debt.interestRate}% anual` : ''}
                 </div>
+                {debt.note && <div style={{ fontSize: 11.5, color: t.textMuted, fontStyle: 'italic', marginTop: 2 }}>{debt.note}</div>}
               </div>
               <div style={{ fontSize: 13, fontWeight: 700, color: t.income }}>{stats.percentPaid.toFixed(0)}%</div>
             </div>
@@ -2029,7 +2057,8 @@ function TransactionSheet({ t, categories, accounts, settings, allTags, initial,
 function ModalShell({ t, title, onClose, children }) {
   return (
     <div className="fz-sheet-backdrop" onClick={onClose}>
-      <div className="fz-modal" style={{ background: t.surface, border: `1px solid ${t.border}` }} onClick={e=>e.stopPropagation()}>
+      <div className="fz-sheet" style={{ background: t.surface, borderTop: `1px solid ${t.border}` }} onClick={e=>e.stopPropagation()}>
+        <div style={{ width: 36, height: 4, borderRadius: 2, background: t.border, margin: '0 auto 16px' }} />
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <div style={{ fontSize: 15.5, fontWeight: 600, color: t.text, fontFamily: 'Fraunces, Georgia, serif' }}>{title}</div>
           <button onClick={onClose} className="fz-icon-btn" style={{ background: t.surfaceAlt, border: `1px solid ${t.border}` }}><Icon name="X" size={15} color={t.text} /></button>
@@ -2536,6 +2565,7 @@ function DebtModal({ t, accounts, settings, initial, onSave, onDelete, onClose }
   const [dueDate, setDueDate] = useState(initial?.dueDate ?? '');
   const [startDate, setStartDate] = useState(initial?.startDate || todayISO());
   const [linkedAccountId, setLinkedAccountId] = useState(initial?.linkedAccountId || '');
+  const [note, setNote] = useState(initial?.note || '');
   const canSave = name.trim().length > 0 && Number(originalAmount) > 0;
 
   const chooseType = (val) => {
@@ -2556,13 +2586,17 @@ function DebtModal({ t, accounts, settings, initial, onSave, onDelete, onClose }
       dueDate: dueDate !== '' ? Number(dueDate) : null,
       startDate,
       linkedAccountId: linkedAccountId || null,
+      note: note.trim(),
       payments: initial?.payments || []
     });
   };
 
   return (
     <ModalShell t={t} title={initial ? 'Editar deuda' : 'Nueva deuda'} onClose={onClose}>
-      <input value={name} onChange={e=>setName(e.target.value)} placeholder="Nombre de la deuda" autoFocus
+      <input value={name} onChange={e=>setName(e.target.value)} placeholder="Nombre de la deuda (ej. Le debo a Pablo)" autoFocus
+        style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, marginBottom: 14, fontFamily: 'Inter, sans-serif', outline: 'none' }} />
+
+      <input value={note} onChange={e=>setNote(e.target.value)} placeholder="Nota (ej. motivo: perfumes)"
         style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, marginBottom: 14, fontFamily: 'Inter, sans-serif', outline: 'none' }} />
 
       <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Tipo de deuda</div>
@@ -3092,13 +3126,11 @@ function App() {
         ::placeholder { color: ${t.textMuted}; opacity: 0.8; }
         .fz-sheet-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: flex-end; z-index: 40; animation: fz-fade .18s ease; }
         .fz-sheet { width: 100%; border-radius: 22px 22px 0 0; padding: 14px 20px 22px; max-height: 88%; overflow-y: auto; animation: fz-up .22s ease; }
-        .fz-modal { width: 88%; max-width: 340px; border-radius: 18px; padding: 20px; animation: fz-pop .18s ease; }
         @keyframes fz-fade { from { opacity: 0; } to { opacity: 1; } }
         @keyframes fz-up { from { transform: translateY(24px); opacity: .4; } to { transform: translateY(0); opacity: 1; } }
-        @keyframes fz-pop { from { transform: scale(.96); opacity: .5; } to { transform: scale(1); opacity: 1; } }
         @keyframes fz-shake-kf { 10%,90% { transform: translateX(-2px); } 20%,80% { transform: translateX(4px); } 30%,50%,70% { transform: translateX(-8px); } 40%,60% { transform: translateX(8px); } }
         .fz-shake { animation: fz-shake-kf .4s; }
-        @media (prefers-reduced-motion: reduce) { .fz-sheet, .fz-modal, .fz-sheet-backdrop, .fz-shake { animation: none !important; } }
+        @media (prefers-reduced-motion: reduce) { .fz-sheet, .fz-sheet-backdrop, .fz-shake { animation: none !important; } }
         input[type="date"]::-webkit-calendar-picker-indicator { filter: ${data.settings.theme==='dark' ? 'invert(1)' : 'none'}; opacity: 0.6; }
       `}</style>
 
@@ -3115,7 +3147,7 @@ function App() {
         ) : (
           <>
             <div style={{ paddingBottom: 84, minHeight: '100vh' }}>
-              {tab==='inicio' && <InicioScreen data={data} t={t} goHistorial={()=>setTab('historial')} openSheet={()=>setSheet({})} onQuickAdd={setQuickAddCat} />}
+              {tab==='inicio' && <InicioScreen data={data} setData={setData} t={t} goHistorial={()=>setTab('historial')} openSheet={()=>setSheet({})} onQuickAdd={setQuickAddCat} />}
               {tab==='historial' && <HistorialScreen data={data} t={t} onEdit={(tx)=>setSheet(tx)} />}
               {tab==='presupuestos' && <MetasScreen data={data} t={t} onEditBudget={(cat)=>setModal({ type: 'budget', cat })} onOpenModal={setModal} />}
               {tab==='reportes' && <ReportesScreen data={data} t={t} />}
