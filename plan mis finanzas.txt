@@ -1,0 +1,894 @@
+# Plan de Trabajo — Mis Finanzas PWA v2.0
+
+## Documento técnico de mejoras para programador
+
+**Proyecto:** Mis Finanzas — PWA de finanzas personales
+**Estado actual:** Maqueta funcional con registro de ingresos/gastos, presupuestos básicos, reportes y exportación CSV.
+**Objetivo:** Convertirla en una app de gestión financiera completa y profesional, al nivel de Wallet (BudgetBakers), Bluecoins o Monefy.
+**Stack:** React 18 (JSX con Babel in-browser), Recharts, Lucide React, cargados desde ESM/CDN. Todo en un solo `index.html`. Datos en localStorage vía shim `window.storage`. PWA con Service Worker.
+
+---
+
+## Contexto técnico
+
+- **Arquitectura:** Single-file app. Todo el código React está dentro de `<script type="text/babel">` en `index.html`. No hay build step.
+- **Estado global:** Un único objeto `data` con `useState` en `<App>`, que contiene `transactions`, `categories`, `budgets`, `settings`. Se persiste entero en localStorage bajo la clave `finanzas_data_v1`.
+- **Navegación:** Tabs en bottom nav: Inicio, Historial, Metas, Reportes, Ajustes. Modales y bottom sheets para formularios.
+- **Diseño:** Sistema de temas (dark/light) con objeto `THEMES`. Tipografía: Fraunces (serif, títulos) + Inter (sans, cuerpo). Paleta dorada/cálida.
+- **PWA:** Service Worker con cache-first para archivos propios, network-first para CDN. Manifest con iconos 192/512/maskable.
+
+---
+
+## Estructura de datos actual
+
+```javascript
+{
+  transactions: [
+    {
+      id: string,          // uid() basado en timestamp
+      createdAt: number,   // Date.now()
+      type: 'income' | 'expense',
+      amount: number,
+      category: string,    // ID de categoría
+      date: string,        // 'YYYY-MM-DD'
+      note: string,
+      method: string       // 'Efectivo' | 'Tarjeta' | 'Transferencia'
+    }
+  ],
+  categories: [
+    {
+      id: string,
+      name: string,
+      icon: string,        // Nombre del ícono Lucide
+      color: string,       // Hex
+      type: 'income' | 'expense'
+    }
+  ],
+  budgets: {
+    [categoryId]: number   // Límite mensual
+  },
+  settings: {
+    theme: 'dark' | 'light',
+    currency: string,      // 'COP', 'USD', etc.
+    pin: string | null
+  }
+}
+```
+
+---
+
+## FASE 1 — Fundamentos financieros (Prioridad CRÍTICA)
+
+Estas mejoras transforman la app de "registrador de gastos" a "gestor financiero real". Implementar en este orden porque cada una depende de la anterior.
+
+### 1.1 Sistema de cuentas múltiples
+
+**Qué hace:** Permite crear y gestionar múltiples cuentas financieras (efectivo, cuenta bancaria, tarjeta de crédito, billeteras digitales como Nequi/Daviplata, cuenta de ahorros). Cada transacción se asocia a una cuenta. Cada cuenta tiene su propio saldo.
+
+**Cambios en el modelo de datos:**
+
+```javascript
+// Agregar al objeto data:
+accounts: [
+  {
+    id: string,
+    name: string,              // 'Bancolombia Ahorros', 'Efectivo', 'Nequi'
+    type: 'cash' | 'bank' | 'credit_card' | 'savings' | 'digital_wallet' | 'investment',
+    icon: string,              // Ícono Lucide
+    color: string,             // Hex
+    initialBalance: number,    // Saldo inicial al crear la cuenta
+    currency: string,          // Moneda de esta cuenta
+    includeInTotal: boolean,   // Si se incluye en el balance global
+    archived: boolean,         // Para ocultar sin borrar
+    order: number              // Orden de visualización
+  }
+],
+
+// Modificar cada transacción:
+transactions: [
+  {
+    ...camposActuales,
+    accountId: string,         // REEMPLAZA el campo 'method'
+    // El campo 'method' se elimina
+  }
+]
+
+// Agregar nuevo tipo de transacción para transferencias entre cuentas:
+// type: 'transfer'
+// Campos adicionales para transferencias:
+// toAccountId: string
+```
+
+**Cuentas por defecto (precargar al primer uso):**
+- Efectivo (cash, ícono: Banknote, color: #8FBFA0)
+- Cuenta bancaria (bank, ícono: CreditCard, color: #8FA7D9)
+- Tarjeta de crédito (credit_card, ícono: CreditCard, color: #D98C7A)
+
+**UI necesaria:**
+
+1. **Pantalla de cuentas** — Accesible desde Inicio, muestra lista de cuentas con saldo individual. Cada cuenta es un card con ícono, nombre, saldo. Botón "+" para agregar cuenta.
+2. **Selector de cuenta en TransactionSheet** — Reemplazar los botones de "Método" (Efectivo/Tarjeta/Transferencia) por un selector de cuenta. Si el tipo es 'transfer', mostrar cuenta origen y cuenta destino.
+3. **Formulario de nueva cuenta** — Modal con campos: nombre, tipo (selector), ícono, color, saldo inicial, moneda, incluir en total (toggle).
+4. **Saldo de cada cuenta** — Se calcula como: `saldoInicial + ingresos - gastos + transferenciasRecibidas - transferenciasEnviadas`
+
+**Lógica de cálculo de saldos:**
+
+```javascript
+function getAccountBalance(accountId, transactions, accounts) {
+  const account = accounts.find(a => a.id === accountId);
+  let balance = account.initialBalance || 0;
+  
+  transactions.forEach(tx => {
+    if (tx.accountId === accountId) {
+      if (tx.type === 'income') balance += tx.amount;
+      if (tx.type === 'expense') balance -= tx.amount;
+      if (tx.type === 'transfer') balance -= tx.amount; // origen
+    }
+    if (tx.type === 'transfer' && tx.toAccountId === accountId) {
+      balance += tx.amount; // destino
+    }
+  });
+  
+  return balance;
+}
+```
+
+**Migración de datos existentes:**
+Al cargar datos v1, si no existe `accounts`, crear la cuenta "Efectivo" por defecto y asignar `accountId: 'efectivo'` a todas las transacciones existentes. Mapear el campo `method` anterior: 'Efectivo' → cuenta efectivo, 'Tarjeta' → crear cuenta tarjeta, 'Transferencia' → cuenta banco.
+
+**Tarjetas de crédito:**
+Las tarjetas de crédito son especiales: el saldo es negativo (deuda). Un gasto con tarjeta AUMENTA la deuda. Un pago a la tarjeta es una transferencia desde otra cuenta.
+
+---
+
+### 1.2 Transacciones recurrentes / programadas
+
+**Qué hace:** Permite configurar transacciones que se repiten automáticamente (salario quincenal, arriendo mensual, Netflix mensual, servicios). Se crean automáticamente cuando la app se abre y la fecha programada ya pasó.
+
+**Cambios en el modelo de datos:**
+
+```javascript
+// Agregar al objeto data:
+recurringTransactions: [
+  {
+    id: string,
+    type: 'income' | 'expense',
+    amount: number,
+    category: string,
+    accountId: string,
+    note: string,
+    frequency: 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'bimonthly' | 'quarterly' | 'yearly',
+    startDate: string,           // 'YYYY-MM-DD'
+    endDate: string | null,      // null = sin fin
+    dayOfMonth: number | null,   // Para mensual: día del mes (1-31)
+    dayOfWeek: number | null,    // Para semanal: 0=dom, 1=lun...
+    lastGeneratedDate: string | null,  // Última fecha en que se generó
+    active: boolean,
+    nextDueDate: string          // Próxima fecha de ejecución
+  }
+]
+```
+
+**Lógica de generación automática:**
+Al abrir la app (en el `useEffect` de carga inicial), después de cargar datos:
+
+```javascript
+function processRecurringTransactions(data) {
+  const today = todayISO();
+  let newTransactions = [...data.transactions];
+  let updatedRecurring = data.recurringTransactions.map(rec => {
+    if (!rec.active) return rec;
+    if (rec.endDate && rec.endDate < today) return { ...rec, active: false };
+    
+    let nextDate = rec.nextDueDate || rec.startDate;
+    const generated = [];
+    
+    while (nextDate <= today) {
+      // Crear transacción
+      generated.push({
+        id: uid(),
+        createdAt: Date.now(),
+        type: rec.type,
+        amount: rec.amount,
+        category: rec.category,
+        accountId: rec.accountId,
+        date: nextDate,
+        note: rec.note ? `${rec.note} (recurrente)` : '(recurrente)',
+        recurringId: rec.id  // Para identificar origen
+      });
+      nextDate = calculateNextDate(nextDate, rec.frequency, rec.dayOfMonth);
+    }
+    
+    newTransactions = [...newTransactions, ...generated];
+    return { ...rec, nextDueDate: nextDate, lastGeneratedDate: today };
+  });
+  
+  return {
+    ...data,
+    transactions: newTransactions,
+    recurringTransactions: updatedRecurring
+  };
+}
+```
+
+**UI necesaria:**
+
+1. **Sección "Recurrentes" en Ajustes o como sub-tab en Historial** — Lista de transacciones recurrentes con toggle activo/inactivo, frecuencia, monto, próxima fecha.
+2. **Formulario de nueva recurrente** — Similar a TransactionSheet pero con campos adicionales: frecuencia (selector), día del mes, fecha inicio, fecha fin (opcional).
+3. **Badge en transacciones generadas** — En el historial, las transacciones generadas por recurrentes muestran un ícono pequeño (🔄) para distinguirlas.
+4. **Opción de editar/pausar/eliminar recurrente.**
+
+---
+
+### 1.3 Metas de ahorro con progreso
+
+**Qué hace:** Permite crear metas de ahorro con monto objetivo, fecha límite y seguimiento de progreso. Se diferencia de los presupuestos (que limitan gasto) en que las metas incentivan acumular.
+
+**Cambios en el modelo de datos:**
+
+```javascript
+// Agregar al objeto data:
+savingsGoals: [
+  {
+    id: string,
+    name: string,                // 'Viaje a Cartagena', 'Fondo de emergencia'
+    icon: string,                // Ícono Lucide
+    color: string,
+    targetAmount: number,        // Meta: $2,000,000
+    currentAmount: number,       // Acumulado: $750,000
+    deadline: string | null,     // 'YYYY-MM-DD' o null si no tiene fecha
+    createdAt: string,
+    linkedAccountId: string | null,  // Opcionalmente vinculada a cuenta de ahorros
+    contributions: [             // Historial de aportes
+      {
+        id: string,
+        date: string,
+        amount: number,          // Positivo = aporte, negativo = retiro
+        note: string
+      }
+    ]
+  }
+]
+```
+
+**UI necesaria:**
+
+1. **Rediseñar la pestaña "Metas"** — Dividir en dos secciones:
+   - **Presupuestos** (control de gasto, lo que ya existe) — renombrar a "Límites de gasto"
+   - **Metas de ahorro** (nuevo) — cards con nombre, barra de progreso circular o lineal, monto actual/meta, % completado, días restantes
+2. **Card de meta de ahorro** — Mostrar: nombre, ícono, progreso visual (barra o círculo), `$750,000 / $2,000,000 (37.5%)`, "Faltan 45 días — necesitas ahorrar $27,778/día"
+3. **Formulario nueva meta** — Nombre, ícono, color, monto objetivo, fecha límite (opcional), cuenta vinculada.
+4. **Botón "Abonar" en cada meta** — Abre un mini formulario para agregar un aporte. Si la meta tiene cuenta vinculada, crea una transferencia automáticamente.
+5. **Celebración al completar** — Animación o confeti cuando currentAmount >= targetAmount.
+
+---
+
+### 1.4 Gestión de deudas
+
+**Qué hace:** Registrar y dar seguimiento a deudas (préstamos, tarjetas de crédito, deudas personales) con cálculo de intereses y fecha estimada de liquidación.
+
+**Cambios en el modelo de datos:**
+
+```javascript
+// Agregar al objeto data:
+debts: [
+  {
+    id: string,
+    name: string,                  // 'Préstamo Bancolombia', 'Le debo a Carlos'
+    type: 'loan' | 'credit_card' | 'personal' | 'mortgage' | 'other',
+    icon: string,
+    color: string,
+    originalAmount: number,        // Monto original del préstamo
+    currentBalance: number,        // Saldo actual pendiente
+    interestRate: number | null,   // Tasa anual (ej: 24.5 = 24.5%)
+    minimumPayment: number | null, // Cuota mínima mensual
+    dueDate: number | null,        // Día del mes en que se paga (1-31)
+    startDate: string,
+    linkedAccountId: string | null,
+    payments: [
+      {
+        id: string,
+        date: string,
+        amount: number,
+        note: string
+      }
+    ]
+  }
+]
+```
+
+**UI necesaria:**
+
+1. **Sección de deudas** — Accesible desde una nueva sub-sección en Metas o como sección en Inicio. Muestra lista de deudas con saldo pendiente, progreso de pago, próximo vencimiento.
+2. **Card de deuda** — Nombre, saldo pendiente, % pagado, cuota mensual, próximo pago, tasa de interés.
+3. **Botón "Registrar pago"** — Reduce el saldo, registra en historial de pagos, y opcionalmente crea la transacción en la cuenta correspondiente.
+4. **Resumen de deuda total** — En Inicio o en Metas: total de deudas pendientes como indicador.
+5. **Cálculos automáticos:**
+   - Meses restantes para liquidar (al ritmo de pago actual)
+   - Total de intereses que se pagarán
+   - Progreso general de deuda (% pagado del total original)
+
+---
+
+## FASE 2 — Inteligencia y análisis (Prioridad ALTA)
+
+### 2.1 Dashboard inteligente en Inicio
+
+**Mejoras al InicioScreen actual:**
+
+1. **"Disponible para gastar"** — Cálculo: (Ingresos del mes - Gastos del mes - Gastos fijos pendientes del mes) / días restantes del mes = presupuesto diario disponible. Mostrar como card prominente debajo del balance.
+
+2. **Alertas de presupuesto** — Si un presupuesto de categoría supera el 80%, mostrar un banner de alerta en Inicio con ícono de advertencia, nombre de categoría y % consumido.
+
+3. **Gastos fijos vs variables** — Mini resumen: "Fijos: $X (arriendo, servicios, Netflix) | Variables: $Y (comida, compras, entretenimiento)". Los fijos son los que vienen de transacciones recurrentes.
+
+4. **Próximos pagos** — Lista de las próximas 3-5 transacciones recurrentes por vencerse, con fecha y monto.
+
+5. **Resumen de cuentas** — Strip horizontal scrollable con las cuentas y sus saldos (como las stories de Instagram pero con cards de cuentas).
+
+**Implementación:**
+
+```jsx
+// Dentro de InicioScreen, agregar después del card de balance:
+
+// Sección: Cuentas (scroll horizontal)
+<div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 8 }}>
+  {accounts.filter(a => !a.archived).map(acc => (
+    <AccountMiniCard key={acc.id} account={acc} balance={getAccountBalance(acc.id, transactions, accounts)} t={t} settings={settings} />
+  ))}
+</div>
+
+// Sección: Disponible para gastar
+<BudgetRemainingCard ... />
+
+// Sección: Alertas de presupuesto
+{budgetAlerts.map(alert => <BudgetAlert key={alert.catId} ... />)}
+
+// Sección: Próximos pagos
+<UpcomingPayments recurring={recurringTransactions} t={t} />
+```
+
+---
+
+### 2.2 Reportes avanzados
+
+**Mejoras al ReportesScreen actual:**
+
+1. **Filtro por período** — Agregar selector: Semana / Mes / Trimestre / Año / Personalizado. Para personalizado, mostrar dos date pickers (desde/hasta).
+
+2. **Distribución de ingresos** — Gráfico de torta/barras de ingresos por categoría (el actual solo muestra gastos).
+
+3. **Flujo de caja neto** — Gráfico de barras agrupadas: ingresos vs gastos vs ahorro neto, por mes.
+
+4. **Evolución del patrimonio neto** — Gráfico de línea que muestra la suma de todos los saldos de cuentas a lo largo del tiempo. Calcular mes a mes históricamente.
+
+5. **Comparativo mes vs mes anterior** — Para cada categoría, mostrar el gasto actual vs el mes anterior con flechas ↑↓ y %.
+
+6. **Top gastos del período** — Ya existe para top 5, expandir a top 10 con opción de ver todos.
+
+7. **Promedio diario de gasto** — Card con: gasto promedio diario del período, días con mayor gasto (mapa de calor simplificado o calendario con intensidad de color).
+
+8. **Gasto por cuenta** — Desglose de gastos por cada cuenta (cuánto gasté con tarjeta vs efectivo vs Nequi).
+
+**Nuevo selector de período (implementación):**
+
+```jsx
+const PERIOD_OPTIONS = [
+  { value: 'week', label: 'Semana' },
+  { value: 'month', label: 'Mes' },
+  { value: 'quarter', label: 'Trimestre' },
+  { value: 'year', label: 'Año' },
+  { value: 'custom', label: 'Personalizado' },
+];
+
+// Usar SegmentedControl o un dropdown para seleccionar período
+// Para 'custom', mostrar dos inputs type="date"
+```
+
+---
+
+### 2.3 Etiquetas (tags) en transacciones
+
+**Qué hace:** Permite agregar etiquetas libres a las transacciones para agrupar gastos que cruzan categorías. Ejemplo: etiquetar como "vacaciones" gastos de transporte, hotel, comida y entretenimiento durante un viaje.
+
+**Cambios en el modelo de datos:**
+
+```javascript
+// En cada transacción, agregar:
+tags: string[]  // ['vacaciones', 'navidad', 'proyecto-x']
+
+// En data, agregar lista global de tags para autocompletado:
+tags: string[]  // Todos los tags usados alguna vez
+```
+
+**UI necesaria:**
+
+1. **Campo de tags en TransactionSheet** — Input con autocompletado de tags existentes. Los tags seleccionados se muestran como chips debajo del input con botón X para quitar.
+2. **Filtro por tag en Historial** — Nuevo dropdown o chip selector para filtrar por tag.
+3. **Reporte por tag** — En Reportes, poder ver el total gastado/ingresado bajo un tag específico.
+
+---
+
+## FASE 3 — Seguridad y datos (Prioridad ALTA)
+
+### 3.1 Respaldo y restauración completa
+
+**Qué hace:** Permite exportar todos los datos de la app como archivo JSON (respaldo completo) e importarlos de vuelta. Opcionalmente, sincronizar con Google Drive.
+
+**Implementación — Nivel 1 (JSON local):**
+
+```javascript
+// Exportar
+function exportFullBackup(data) {
+  const backup = {
+    version: 2,
+    exportedAt: new Date().toISOString(),
+    app: 'MisFinanzas',
+    data: data  // Todo el objeto data completo
+  };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `mis-finanzas-backup-${todayISO()}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// Importar
+function importFullBackup(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const backup = JSON.parse(e.target.result);
+        if (backup.app !== 'MisFinanzas') throw new Error('Archivo no válido');
+        // Validar estructura mínima
+        if (!backup.data || !backup.data.transactions) throw new Error('Datos incompletos');
+        resolve(backup.data);
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.readAsText(file);
+  });
+}
+```
+
+**UI necesaria:**
+
+1. **En Ajustes, sección "Datos":**
+   - Botón "Exportar respaldo completo (JSON)" — Descarga el archivo
+   - Botón "Importar respaldo" — Abre selector de archivo, confirma antes de sobrescribir
+   - Botón "Exportar a CSV" (ya existe, mover aquí)
+2. **Modal de confirmación de importación** — "Esto reemplazará TODOS tus datos actuales. ¿Continuar?"
+3. **Indicador de último respaldo** — Mostrar fecha del último export: "Último respaldo: 15 jul 2026"
+
+**Implementación — Nivel 2 (Google Drive, opcional/futuro):**
+Requiere integrar Google Identity Services y Google Drive API para guardar el JSON en Drive del usuario. Es más complejo pero factible en una PWA.
+
+---
+
+### 3.2 Mejorar el exportar CSV
+
+**Mejoras al CSV actual:**
+
+1. Agregar columna de cuenta (nombre de la cuenta)
+2. Agregar columna de tags
+3. Agregar columna de saldo acumulado
+4. Opción de exportar solo el período seleccionado (no todo)
+5. Separar el monto en dos columnas: Ingreso y Gasto (facilita importar en Excel)
+6. Agregar BOM UTF-8 para que Excel abra bien los acentos
+
+```javascript
+function exportCSV(transactions, categories, accounts, settings, dateRange) {
+  const BOM = '\uFEFF';  // BOM para UTF-8 en Excel
+  const header = 'Fecha,Tipo,Categoría,Cuenta,Monto,Ingreso,Gasto,Nota,Etiquetas\n';
+  
+  let filtered = transactions;
+  if (dateRange) {
+    filtered = filtered.filter(tx => tx.date >= dateRange.from && tx.date <= dateRange.to);
+  }
+  
+  const rows = filtered
+    .sort((a,b) => a.date.localeCompare(b.date))
+    .map(tx => {
+      const cat = categories.find(c => c.id === tx.category);
+      const acc = accounts.find(a => a.id === tx.accountId);
+      const ingreso = tx.type === 'income' ? tx.amount : '';
+      const gasto = tx.type === 'expense' ? tx.amount : '';
+      const tags = (tx.tags || []).join('; ');
+      const nota = (tx.note || '').replace(/,/g, ';');
+      return `${tx.date},${tx.type === 'income' ? 'Ingreso' : 'Gasto'},${cat?.name || 'Otros'},${acc?.name || ''},${tx.amount},${ingreso},${gasto},${nota},${tags}`;
+    }).join('\n');
+  
+  const blob = new Blob([BOM + header + rows], { type: 'text/csv;charset=utf-8;' });
+  // ... descarga
+}
+```
+
+---
+
+### 3.3 Importación de datos
+
+**Qué hace:** Permite importar transacciones desde un archivo CSV (para migrar de otra app o cargar historial bancario).
+
+**UI necesaria:**
+
+1. **En Ajustes > Datos: botón "Importar desde CSV"**
+2. **Pantalla de mapeo de columnas** — Después de cargar el CSV, mostrar vista previa de las primeras 5 filas y permitir asignar qué columna corresponde a: fecha, monto, categoría, nota, tipo. Esto se hace con dropdowns.
+3. **Confirmación y vista previa** — Mostrar cuántas transacciones se van a importar, rango de fechas, total de ingresos/gastos. Botón "Importar X transacciones".
+
+---
+
+## FASE 4 — UX y pulido (Prioridad MEDIA)
+
+### 4.1 Búsqueda y filtrado avanzado en Historial
+
+**Agregar al HistorialScreen:**
+
+1. **Filtro por rango de fechas** — Dos date pickers: Desde / Hasta
+2. **Filtro por rango de montos** — Dos inputs: Monto mín / Monto máx
+3. **Filtro por cuenta** — Dropdown con las cuentas
+4. **Filtro por tag** — Selector de chips
+5. **Ordenamiento** — Por fecha (default), por monto (mayor/menor), por categoría
+6. **Panel de filtros colapsable** — Icono de filtro que despliega/colapsa los filtros avanzados para no saturar la pantalla
+
+```jsx
+// Agregar botón de filtro al lado de la barra de búsqueda
+<button onClick={() => setShowFilters(!showFilters)}>
+  <Icon name="Filter" />
+  {activeFilterCount > 0 && <badge>{activeFilterCount}</badge>}
+</button>
+
+// Panel colapsable con los filtros
+{showFilters && (
+  <div className="filters-panel">
+    {/* Rango de fechas */}
+    {/* Rango de montos */}
+    {/* Cuenta */}
+    {/* Tags */}
+    {/* Ordenamiento */}
+    <button onClick={clearAllFilters}>Limpiar filtros</button>
+  </div>
+)}
+```
+
+---
+
+### 4.2 Edición de categorías existentes
+
+**Qué hace:** Permite editar nombre, ícono y color de una categoría ya creada. También fusionar dos categorías.
+
+**Implementación:**
+
+1. **En Ajustes > Categorías:** Al tocar una categoría, abrir modal de edición (no solo el botón de eliminar).
+2. **Modal de edición de categoría** — Igual al de creación pero pre-llenado. Campos: nombre, tipo (no editable si ya tiene transacciones), ícono, color.
+3. **Fusionar categorías** — Botón "Fusionar con otra". Seleccionar categoría destino. Todas las transacciones de la categoría actual se reasignan a la destino. La categoría actual se elimina.
+4. **Confirmar eliminación con reasignación** — Al eliminar una categoría que tiene transacciones, preguntar: "Reasignar X transacciones a:" + selector de otra categoría.
+
+---
+
+### 4.3 Notificaciones y recordatorios (PWA push)
+
+**Qué hace:** Envía notificaciones push para recordar registrar gastos y avisar de presupuestos agotados.
+
+**Tipos de notificación:**
+
+1. **Recordatorio diario** — "¿Ya registraste tus gastos de hoy?" Hora configurable.
+2. **Alerta de presupuesto** — Cuando una categoría supera el 80% y el 100% del presupuesto.
+3. **Pago recurrente próximo** — "Mañana vence: Arriendo ($1,200,000)"
+4. **Meta de ahorro** — "¡Llevas 75% de tu meta 'Viaje a Cartagena'!"
+
+**Implementación técnica:**
+Las PWA soportan la Notification API y la Push API. Para notificaciones locales (sin servidor):
+
+```javascript
+// Solicitar permiso
+async function requestNotificationPermission() {
+  if ('Notification' in window) {
+    const permission = await Notification.requestPermission();
+    return permission === 'granted';
+  }
+  return false;
+}
+
+// Programar notificación (via Service Worker)
+// En sw.js, usar self.registration.showNotification()
+// Disparar desde la app al detectar condiciones (presupuesto > 80%, etc.)
+```
+
+**UI necesaria:**
+
+1. **En Ajustes > Notificaciones:**
+   - Toggle: Recordatorio diario (+ selector de hora)
+   - Toggle: Alertas de presupuesto
+   - Toggle: Pagos próximos
+   - Toggle: Progreso de metas
+
+---
+
+### 4.4 Multi-moneda simultánea
+
+**Qué hace:** Cada cuenta puede tener su propia moneda. Al mostrar totales globales, se convierten a la moneda principal del usuario.
+
+**Implementación:**
+
+```javascript
+// Cada cuenta ya tiene campo 'currency'
+// Agregar al settings:
+settings: {
+  ...existente,
+  mainCurrency: 'COP',  // Moneda base para mostrar totales
+  exchangeRates: {       // Tasas manuales (el usuario las actualiza)
+    'USD': 4150,         // 1 USD = 4150 COP
+    'EUR': 4500,
+  },
+  exchangeRatesUpdatedAt: string  // Fecha de última actualización
+}
+
+// Función de conversión
+function convertToMainCurrency(amount, fromCurrency, settings) {
+  if (fromCurrency === settings.mainCurrency) return amount;
+  const rate = settings.exchangeRates[fromCurrency];
+  if (!rate) return amount;
+  
+  // Si mainCurrency es COP y fromCurrency es USD: amount * rate
+  // Si mainCurrency es USD y fromCurrency es COP: amount / rate
+  // Simplificación: la tasa siempre se guarda como "1 [foreign] = X [main]"
+  return amount * rate;
+}
+```
+
+**UI necesaria:**
+
+1. **En Ajustes > Moneda:** Sección para configurar tasas de cambio manualmente.
+2. **En los totales globales:** Mostrar el monto convertido y un indicador de moneda mezclada.
+3. **En cada transacción:** Si la cuenta tiene moneda diferente a la principal, mostrar ambas.
+
+---
+
+## FASE 5 — Detalles y diferenciadores (Prioridad MEDIA-BAJA)
+
+### 5.1 Pantalla de onboarding (primera vez)
+
+**Qué hace:** Guía al usuario la primera vez que abre la app para configurar sus cuentas iniciales, moneda, y hacer un tour rápido.
+
+**Flujo:**
+1. Pantalla de bienvenida con logo
+2. "¿Cuál es tu moneda principal?" (selector de moneda)
+3. "¿Qué cuentas quieres usar?" (checkboxes: Efectivo, Cuenta bancaria, Tarjeta de crédito, Nequi/Daviplata, Otra)
+4. Para cada cuenta seleccionada: "¿Cuál es tu saldo actual en [cuenta]?" (input de monto)
+5. "¡Listo! Tu app está configurada." (Botón: Empezar)
+
+### 5.2 Calculadora rápida en el input de monto
+
+**Qué hace:** Al ingresar un monto en TransactionSheet, si el usuario escribe una expresión como "25000+12000" o "150000/2", se evalúa automáticamente.
+
+```javascript
+function evaluateExpression(str) {
+  // Solo permitir números y operadores básicos
+  const sanitized = str.replace(/[^0-9+\-*/().]/g, '');
+  try {
+    const result = Function('"use strict"; return (' + sanitized + ')')();
+    return Number.isFinite(result) ? result : null;
+  } catch {
+    return null;
+  }
+}
+```
+
+### 5.3 Modo "registro rápido" con widgets
+
+**Qué hace:** Acceso directo desde el inicio para registrar un gasto en 2 toques: categoría → monto → listo. Sin abrir el formulario completo.
+
+### 5.4 Estadísticas de "racha"
+
+**Qué hace:** Muestra cuántos días consecutivos ha registrado gastos el usuario. Incentiva el hábito diario. "🔥 Racha: 12 días registrando tus finanzas."
+
+### 5.5 Compartir presupuesto familiar (futuro)
+
+**Qué hace:** Usando un código o QR, dos dispositivos sincronizan los mismos datos para que una pareja pueda gestionar finanzas juntos. Requiere backend — marcar como v3.0.
+
+---
+
+## Cambios en la estructura de datos — RESUMEN
+
+### Nuevo objeto `data` completo (v2):
+
+```javascript
+const DEFAULT_DATA_V2 = {
+  version: 2,
+  
+  // --- Existentes (modificados) ---
+  transactions: [],           // + accountId, tags, recurringId
+  categories: DEFAULT_CATEGORIES,
+  budgets: {},
+  settings: {
+    theme: 'dark',
+    currency: 'COP',
+    pin: null,
+    mainCurrency: 'COP',
+    exchangeRates: {},
+    exchangeRatesUpdatedAt: null,
+    notifications: {
+      dailyReminder: false,
+      dailyReminderTime: '21:00',
+      budgetAlerts: true,
+      upcomingPayments: true,
+      savingsProgress: false
+    },
+    lastBackupDate: null,
+    onboardingCompleted: false
+  },
+  
+  // --- Nuevos ---
+  accounts: DEFAULT_ACCOUNTS,
+  recurringTransactions: [],
+  savingsGoals: [],
+  debts: [],
+  tags: []
+};
+```
+
+### Función de migración v1 → v2:
+
+```javascript
+function migrateV1toV2(oldData) {
+  // 1. Crear cuentas por defecto basadas en methods usados
+  const methods = new Set(oldData.transactions.map(tx => tx.method).filter(Boolean));
+  const accounts = [
+    { id: 'efectivo', name: 'Efectivo', type: 'cash', icon: 'Banknote', color: '#8FBFA0', initialBalance: 0, currency: oldData.settings.currency, includeInTotal: true, archived: false, order: 0 },
+  ];
+  if (methods.has('Tarjeta')) {
+    accounts.push({ id: 'tarjeta', name: 'Tarjeta', type: 'credit_card', icon: 'CreditCard', color: '#D98C7A', initialBalance: 0, currency: oldData.settings.currency, includeInTotal: true, archived: false, order: 1 });
+  }
+  if (methods.has('Transferencia')) {
+    accounts.push({ id: 'banco', name: 'Cuenta bancaria', type: 'bank', icon: 'Wallet', color: '#8FA7D9', initialBalance: 0, currency: oldData.settings.currency, includeInTotal: true, archived: false, order: 2 });
+  }
+  
+  // 2. Mapear method → accountId en transacciones
+  const methodToAccount = { 'Efectivo': 'efectivo', 'Tarjeta': 'tarjeta', 'Transferencia': 'banco' };
+  const transactions = oldData.transactions.map(tx => ({
+    ...tx,
+    accountId: methodToAccount[tx.method] || 'efectivo',
+    tags: [],
+    // Eliminar method
+  }));
+  transactions.forEach(tx => delete tx.method);
+  
+  // 3. Retornar estructura v2
+  return {
+    version: 2,
+    transactions,
+    categories: oldData.categories,
+    budgets: oldData.budgets,
+    settings: {
+      ...DEFAULT_DATA_V2.settings,
+      theme: oldData.settings.theme,
+      currency: oldData.settings.currency,
+      pin: oldData.settings.pin,
+      mainCurrency: oldData.settings.currency,
+    },
+    accounts,
+    recurringTransactions: [],
+    savingsGoals: [],
+    debts: [],
+    tags: []
+  };
+}
+```
+
+---
+
+## Cambios en el Service Worker
+
+Actualizar `CACHE_NAME` a `'mis-finanzas-v2'` al desplegar cambios para forzar actualización del cache.
+
+---
+
+## Navegación actualizada
+
+### Bottom Nav (5 tabs):
+
+| Tab | Label | Ícono | Contenido |
+|-----|-------|-------|-----------|
+| inicio | Inicio | Home | Dashboard con balance, cuentas, alertas, próximos pagos, resumen, recientes |
+| historial | Historial | Clock | Lista de transacciones con filtros avanzados |
+| metas | Metas | Target | Sub-tabs: Presupuestos | Ahorro | Deudas |
+| reportes | Reportes | PieIcon | Reportes con selector de período y múltiples gráficos |
+| ajustes | Ajustes | Settings | Config, categorías, cuentas, recurrentes, datos, notificaciones |
+
+### Dentro de Ajustes (secciones):
+
+1. Apariencia (tema)
+2. Moneda y tasas de cambio
+3. Cuentas (lista + agregar)
+4. Categorías (lista + agregar + editar)
+5. Transacciones recurrentes (lista + agregar)
+6. Notificaciones (toggles)
+7. Datos (exportar JSON, exportar CSV, importar JSON, importar CSV)
+8. Privacidad (PIN)
+9. Zona de riesgo (borrar todo)
+
+---
+
+## Orden de implementación recomendado
+
+Cada paso debe dejar la app funcional y sin errores antes de pasar al siguiente:
+
+### Sprint 1 — Cuentas múltiples
+1. Agregar `accounts` al modelo de datos y migración v1→v2
+2. UI de lista de cuentas en Ajustes
+3. Modal de crear/editar cuenta
+4. Reemplazar "Método" por selector de cuenta en TransactionSheet
+5. Calcular saldo por cuenta
+6. Mostrar strip de cuentas en Inicio
+7. Soporte para transferencias entre cuentas
+8. Actualizar todos los cálculos y reportes para considerar cuentas
+
+### Sprint 2 — Transacciones recurrentes
+1. Agregar `recurringTransactions` al modelo
+2. UI de lista de recurrentes en Ajustes
+3. Modal de crear/editar recurrente
+4. Lógica de generación automática al abrir la app
+5. Badge visual en transacciones generadas
+6. Sección "Próximos pagos" en Inicio
+
+### Sprint 3 — Metas de ahorro + Deudas
+1. Agregar `savingsGoals` y `debts` al modelo
+2. Rediseñar pestaña Metas con sub-tabs (Presupuestos | Ahorro | Deudas)
+3. UI de metas de ahorro (cards, crear, abonar)
+4. UI de deudas (cards, crear, registrar pago)
+5. Cálculos automáticos de deudas
+6. Resumen en Inicio
+
+### Sprint 4 — Reportes avanzados + Tags
+1. Agregar `tags` al modelo y UI en TransactionSheet
+2. Selector de período en Reportes
+3. Nuevos gráficos: ingresos por categoría, flujo neto, patrimonio neto
+4. Comparativo mes vs anterior
+5. Filtro por tag en Historial y Reportes
+
+### Sprint 5 — Datos y seguridad
+1. Exportar/importar JSON
+2. Mejorar CSV
+3. Importar CSV con mapeo de columnas
+4. Edición de categorías
+5. Fusión de categorías
+
+### Sprint 6 — Filtros avanzados + UX
+1. Filtros avanzados en Historial
+2. Notificaciones PWA
+3. Calculadora en input de monto
+4. Onboarding de primera vez
+5. Racha de registro
+
+### Sprint 7 — Multi-moneda + Pulido
+1. Multi-moneda con tasas manuales
+2. Revisión general de UI/UX
+3. Testing completo
+4. Actualizar Service Worker y manifest
+5. Actualizar LEEME.md
+
+---
+
+## Consideraciones técnicas para el programador
+
+1. **Rendimiento:** Con muchas transacciones (1000+), los cálculos de saldos y filtros pueden ser lentos. Usar `useMemo` agresivamente para cachear cálculos derivados. Considerar virtualizar listas largas.
+
+2. **Tamaño del archivo:** El index.html ya es grande (~1175 líneas). Con todas las mejoras podría llegar a 4000-5000 líneas. Considerar si vale la pena separar en módulos ES (con import maps) o mantener el single-file. Recomendación: mantener single-file por simplicidad de deploy, pero organizar el código con comentarios claros de sección.
+
+3. **Compatibilidad:** Probar en Chrome Android (principal), Safari iOS, Chrome desktop. Babel transpila el JSX; las APIs modernas (Intl, Notification) tienen buen soporte.
+
+4. **localStorage limits:** El límite típico es 5-10MB. Un JSON con 5000 transacciones pesa ~1MB. No debería ser problema, pero implementar compresión si crece mucho.
+
+5. **Integridad de datos:** Toda operación que modifique `data` debe pasar por `setData()` para que el `useEffect` persista. Nunca mutar directamente.
+
+6. **Estilo visual:** Mantener la estética actual (Fraunces + Inter, paleta cálida dorada, cards con bordes sutiles, animaciones suaves). Todas las nuevas pantallas deben seguir el mismo sistema de temas usando el objeto `t`.
+
+7. **Íconos adicionales necesarios:** Agregar a los imports de Lucide: `Repeat, Bell, BellOff, Upload, FileJson, FileSpreadsheet, Merge, Archive, DollarSign, Percent, AlertTriangle, Flame, QrCode, Users, ArrowRightLeft`
+
+8. **No romper datos existentes:** La migración v1→v2 debe ser automática, transparente y sin pérdida de datos. El usuario no debe notar nada excepto las nuevas funcionalidades.
