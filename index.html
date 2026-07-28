@@ -110,7 +110,8 @@ import {
   Zap, MoreHorizontal, Laptop, PlusCircle, ChevronRight, ChevronLeft,
   Gift, Plane, Dumbbell, BookOpen, Coffee, Landmark, PiggyBank, Smartphone,
   ArrowRightLeft, Archive, Repeat, Pause, Play, Users, Percent, PartyPopper,
-  Info, Upload, FileJson, FileSpreadsheet, AlertTriangle, RefreshCw, Fingerprint
+  Info, Upload, FileJson, FileSpreadsheet, AlertTriangle, RefreshCw, Fingerprint,
+  Eye, EyeOff
 } from 'lucide-react';
 
 /* ---------------------------------- ICONOS ---------------------------------- */
@@ -122,7 +123,8 @@ const ICONS = {
   MoreHorizontal, Laptop, PlusCircle, ChevronRight, ChevronLeft, Gift,
   Plane, Dumbbell, BookOpen, Coffee, Landmark, PiggyBank, Smartphone,
   ArrowRightLeft, Archive, Repeat, Pause, Play, Users, Percent, PartyPopper,
-  Info, Upload, FileJson, FileSpreadsheet, AlertTriangle, RefreshCw, Fingerprint
+  Info, Upload, FileJson, FileSpreadsheet, AlertTriangle, RefreshCw, Fingerprint,
+  Eye, EyeOff
 };
 const Icon = ({ name, size = 18, color, style }) => {
   const Cmp = ICONS[name] || MoreHorizontal;
@@ -748,6 +750,7 @@ function InicioScreen({ data, setData, t, goHistorial, openSheet, onQuickAdd, on
   const curMonthKey = `${now.getFullYear()}-${pad(now.getMonth()+1)}`;
   const balanceView = settings.homeBalanceView || 'total';
   const setBalanceView = (v) => setData(d => ({ ...d, settings: { ...d.settings, homeBalanceView: v } }));
+  const [balanceHidden, setBalanceHidden] = useState(false);
 
   const freqCount = {};
   transactions.filter(tx=>tx.type==='expense').forEach(tx=>{ freqCount[tx.category] = (freqCount[tx.category]||0) + 1; });
@@ -878,8 +881,12 @@ function InicioScreen({ data, setData, t, goHistorial, openSheet, onQuickAdd, on
           </div>
 
           <div style={{ fontSize: 11, letterSpacing: '0.14em', color: t.textMuted, textTransform: 'uppercase', fontWeight: 600 }}>{balanceLabel}</div>
-          <div style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 36, color: t.text, fontWeight: 600, marginTop: 6, fontVariantNumeric: 'tabular-nums' }}>
-            {formatMoney(displayBalance, settings.currency)}
+          <div onClick={()=>setBalanceHidden(h=>!h)} title={balanceHidden ? 'Mostrar montos' : 'Ocultar montos'}
+            style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none' }}>
+            <div style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 36, color: t.text, fontWeight: 600, marginTop: 6, fontVariantNumeric: 'tabular-nums' }}>
+              {balanceHidden ? '••••••' : formatMoney(displayBalance, settings.currency)}
+            </div>
+            <Icon name={balanceHidden ? 'EyeOff' : 'Eye'} size={16} color={t.textMuted} style={{ marginTop: 6 }} />
           </div>
           <div style={{ fontSize: 12.5, color: t.textMuted, marginTop: 6 }}>{mood}</div>
 
@@ -888,14 +895,14 @@ function InicioScreen({ data, setData, t, goHistorial, openSheet, onQuickAdd, on
               <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: t.textMuted, fontSize: 11.5, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                 <Icon name="ArrowUpRight" size={13} color={t.income} /> Ingresos
               </div>
-              <div style={{ fontSize: 16.5, color: t.income, fontWeight: 600, marginTop: 3 }}>{formatMoney(income, settings.currency)}</div>
+              <div style={{ fontSize: 16.5, color: t.income, fontWeight: 600, marginTop: 3 }}>{balanceHidden ? '••••' : formatMoney(income, settings.currency)}</div>
             </div>
             <div style={{ width: 1, alignSelf: 'stretch', background: t.border }} />
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: t.textMuted, fontSize: 11.5, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                 <Icon name="ArrowDownRight" size={13} color={t.expense} /> Gastos
               </div>
-              <div style={{ fontSize: 16.5, color: t.expense, fontWeight: 600, marginTop: 3 }}>{formatMoney(expense, settings.currency)}</div>
+              <div style={{ fontSize: 16.5, color: t.expense, fontWeight: 600, marginTop: 3 }}>{balanceHidden ? '••••' : formatMoney(expense, settings.currency)}</div>
             </div>
           </div>
 
