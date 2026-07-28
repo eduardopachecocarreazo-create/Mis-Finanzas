@@ -110,7 +110,7 @@ import {
   Zap, MoreHorizontal, Laptop, PlusCircle, ChevronRight, ChevronLeft,
   Gift, Plane, Dumbbell, BookOpen, Coffee, Landmark, PiggyBank, Smartphone,
   ArrowRightLeft, Archive, Repeat, Pause, Play, Users, Percent, PartyPopper,
-  Info, Upload, FileJson, FileSpreadsheet, AlertTriangle, RefreshCw
+  Info, Upload, FileJson, FileSpreadsheet, AlertTriangle, RefreshCw, Fingerprint
 } from 'lucide-react';
 
 /* ---------------------------------- ICONOS ---------------------------------- */
@@ -122,7 +122,7 @@ const ICONS = {
   MoreHorizontal, Laptop, PlusCircle, ChevronRight, ChevronLeft, Gift,
   Plane, Dumbbell, BookOpen, Coffee, Landmark, PiggyBank, Smartphone,
   ArrowRightLeft, Archive, Repeat, Pause, Play, Users, Percent, PartyPopper,
-  Info, Upload, FileJson, FileSpreadsheet, AlertTriangle, RefreshCw
+  Info, Upload, FileJson, FileSpreadsheet, AlertTriangle, RefreshCw, Fingerprint
 };
 const Icon = ({ name, size = 18, color, style }) => {
   const Cmp = ICONS[name] || MoreHorizontal;
@@ -196,7 +196,7 @@ const DEFAULT_DATA = {
   categories: DEFAULT_CATEGORIES,
   budgets: {},
   settings: {
-    theme: 'dark', palette: 'gold', currency: 'COP', pin: null, lastBackupDate: null, onboardingCompleted: false, userName: '',
+    theme: 'dark', palette: 'gold', currency: 'COP', pin: null, biometricCredentialId: null, lastBackupDate: null, onboardingCompleted: false, userName: '',
     notifications: { dailyReminder: false, dailyReminderTime: '21:00', budgetAlerts: true, upcomingPayments: true, lastCheckedDate: null }
   },
   accounts: DEFAULT_ACCOUNTS,
@@ -249,6 +249,54 @@ const pad = n => (n < 10 ? '0' + n : '' + n);
 const todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
 const monthKeyOf = dateStr => dateStr.slice(0,7);
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+
+/* ---------------------------------- BIOMETRÍA (WebAuthn) ---------------------------------- */
+function randomBytes(len) { const a = new Uint8Array(len); crypto.getRandomValues(a); return a; }
+function bufToBase64url(buf) {
+  const bytes = new Uint8Array(buf);
+  let str = '';
+  for (let i = 0; i < bytes.length; i++) str += String.fromCharCode(bytes[i]);
+  return btoa(str).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function base64urlToBuf(b64url) {
+  const b64 = b64url.replace(/-/g,'+').replace(/_/g,'/') + '='.repeat((4 - b64url.length % 4) % 4);
+  const str = atob(b64);
+  const bytes = new Uint8Array(str.length);
+  for (let i = 0; i < str.length; i++) bytes[i] = str.charCodeAt(i);
+  return bytes.buffer;
+}
+async function isBiometricAvailable() {
+  try {
+    if (!window.isSecureContext || !window.PublicKeyCredential || !navigator.credentials) return false;
+    return await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+  } catch { return false; }
+}
+async function registerBiometricCredential(userName) {
+  const cred = await navigator.credentials.create({
+    publicKey: {
+      challenge: randomBytes(32),
+      rp: { id: location.hostname, name: 'Mis Finanzas' },
+      user: { id: randomBytes(16), name: userName || 'usuario', displayName: userName || 'Usuario' },
+      pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+      authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required', residentKey: 'preferred' },
+      timeout: 60000,
+      attestation: 'none'
+    }
+  });
+  if (!cred) throw new Error('No se pudo crear la credencial');
+  return bufToBase64url(cred.rawId);
+}
+async function verifyBiometricCredential(credentialIdB64) {
+  const assertion = await navigator.credentials.get({
+    publicKey: {
+      challenge: randomBytes(32),
+      allowCredentials: [{ id: base64urlToBuf(credentialIdB64), type: 'public-key' }],
+      userVerification: 'required',
+      timeout: 60000
+    }
+  });
+  return !!assertion;
+}
 
 function truncateLabel(str, max) {
   const s = String(str || '');
@@ -1701,6 +1749,30 @@ function AjustesScreen({ data, setData, t, onOpenModal }) {
   const jsonInputRef = useRef(null);
   const csvInputRef = useRef(null);
   const [updateStatus, setUpdateStatus] = useState('');
+  const [biometricSupported, setBiometricSupported] = useState(false);
+  const [biometricBusy, setBiometricBusy] = useState(false);
+  const [biometricError, setBiometricError] = useState('');
+  useEffect(() => { isBiometricAvailable().then(setBiometricSupported); }, []);
+
+  const toggleBiometric = async () => {
+    setBiometricError('');
+    if (settings.biometricCredentialId) {
+      setData(d => ({ ...d, settings: { ...d.settings, biometricCredentialId: null } }));
+      return;
+    }
+    setBiometricBusy(true);
+    try {
+      const credId = await registerBiometricCredential(settings.userName);
+      setData(d => ({ ...d, settings: { ...d.settings, biometricCredentialId: credId } }));
+    } catch (e) {
+      const msg = e && e.name === 'NotAllowedError'
+        ? 'Cancelaste la verificación o tu dispositivo la rechazó.'
+        : e && e.message ? `No se pudo activar (${e.name || 'Error'}: ${e.message}).` : 'No se pudo activar.';
+      setBiometricError(msg + ' Verifica que tengas Face ID / huella configurada en tu dispositivo.');
+    } finally {
+      setBiometricBusy(false);
+    }
+  };
 
   const forceUpdateCheck = async () => {
     setUpdateStatus('Buscando...');
@@ -1900,6 +1972,29 @@ function AjustesScreen({ data, setData, t, onOpenModal }) {
             <div style={{ width: 14, height: 14, borderRadius: 7, background: settings.pin ? t.accentText : t.textMuted, position: 'absolute', top: 2, left: settings.pin ? 18 : 2, transition: 'left .2s ease' }} />
           </div>
         </button>
+
+        {settings.pin && !biometricSupported && (
+          <div style={{ fontSize: 11, color: t.textMuted, marginBottom: 14, padding: '0 2px' }}>
+            Face ID / Huella no está disponible en este navegador o dispositivo. Debes abrir la app desde Safari/Chrome sobre HTTPS y tener biometría configurada en el sistema.
+          </div>
+        )}
+        {settings.pin && biometricSupported && (
+          <>
+            <button onClick={toggleBiometric} disabled={biometricBusy} className="fz-row-btn"
+              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, background: t.surface, border: `1px solid ${t.border}`, borderRadius: 14, padding: '13px 14px', cursor: biometricBusy?'default':'pointer', marginBottom: 6, opacity: biometricBusy?0.6:1 }}>
+              <Icon name="Fingerprint" size={16} color={t.text} />
+              <div style={{ flex: 1, textAlign: 'left' }}>
+                <div style={{ fontSize: 13, color: t.text, fontWeight: 500 }}>Face ID / Huella</div>
+                <div style={{ fontSize: 11, color: t.textMuted }}>{biometricBusy ? 'Esperando verificación…' : settings.biometricCredentialId ? 'Activado — toca para desactivar' : 'Desbloquea con tu biometría en vez del PIN'}</div>
+              </div>
+              <div style={{ width: 36, height: 20, borderRadius: 10, background: settings.biometricCredentialId ? t.accent : t.surfaceAlt, border: `1px solid ${t.border}`, position: 'relative', flexShrink: 0 }}>
+                <div style={{ width: 14, height: 14, borderRadius: 7, background: settings.biometricCredentialId ? t.accentText : t.textMuted, position: 'absolute', top: 2, left: settings.biometricCredentialId ? 18 : 2, transition: 'left .2s ease' }} />
+              </div>
+            </button>
+            {biometricError && <div style={{ fontSize: 11, color: t.expense, marginBottom: 10, padding: '0 2px' }}>{biometricError}</div>}
+          </>
+        )}
+        <div style={{ marginBottom: 18 }} />
 
         <SectionLabel t={t}>Actualizaciones</SectionLabel>
         <button onClick={forceUpdateCheck} className="fz-row-btn"
@@ -2775,14 +2870,15 @@ function DebtModal({ t, accounts, settings, initial, onSave, onDelete, onClose }
 }
 
 function DebtPaymentModal({ t, accounts, settings, debt, onSave, onClose }) {
+  const activeAccounts = accounts.filter(a=>!a.archived);
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
-  const [accountId, setAccountId] = useState(debt.linkedAccountId || '');
-  const canSave = Number(amount) > 0;
+  const [accountId, setAccountId] = useState(debt.linkedAccountId || activeAccounts[0]?.id || '');
+  const canSave = Number(amount) > 0 && !!accountId;
 
   const save = () => {
     if (!canSave) return;
-    onSave({ amount: Number(amount), note: note.trim(), accountId: accountId || null });
+    onSave({ amount: Number(amount), note: note.trim(), accountId });
   };
 
   return (
@@ -2793,11 +2889,11 @@ function DebtPaymentModal({ t, accounts, settings, debt, onSave, onClose }) {
           style={{ width: '100%', textAlign: 'center', fontFamily: 'Fraunces, Georgia, serif', fontSize: 30, color: t.income, background: 'transparent', border: 'none', outline: 'none' }} />
       </div>
 
-      <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Registrar como gasto en cuenta (opcional)</div>
+      <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Descontar de la cuenta</div>
       <select value={accountId} onChange={e=>setAccountId(e.target.value)}
         style={{ width: '100%', marginBottom: 14, padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'Inter, sans-serif' }}>
-        <option value="">No registrar movimiento</option>
-        {accounts.filter(a=>!a.archived).map(a=><option key={a.id} value={a.id}>{a.name}</option>)}
+        {activeAccounts.length === 0 && <option value="">Sin cuentas disponibles</option>}
+        {activeAccounts.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}
       </select>
 
       <input value={note} onChange={e=>setNote(e.target.value)} placeholder="Nota (opcional)"
@@ -2921,14 +3017,15 @@ function ReceivableModal({ t, accounts, settings, initial, onSave, onDelete, onC
 }
 
 function ReceivablePaymentModal({ t, accounts, settings, receivable, onSave, onClose }) {
+  const activeAccounts = accounts.filter(a=>!a.archived);
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
-  const [accountId, setAccountId] = useState(receivable.linkedAccountId || '');
-  const canSave = Number(amount) > 0;
+  const [accountId, setAccountId] = useState(receivable.linkedAccountId || activeAccounts[0]?.id || '');
+  const canSave = Number(amount) > 0 && !!accountId;
 
   const save = () => {
     if (!canSave) return;
-    onSave({ amount: Number(amount), note: note.trim(), accountId: accountId || null });
+    onSave({ amount: Number(amount), note: note.trim(), accountId });
   };
 
   return (
@@ -2939,11 +3036,11 @@ function ReceivablePaymentModal({ t, accounts, settings, receivable, onSave, onC
           style={{ width: '100%', textAlign: 'center', fontFamily: 'Fraunces, Georgia, serif', fontSize: 30, color: t.income, background: 'transparent', border: 'none', outline: 'none' }} />
       </div>
 
-      <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Registrar como ingreso en cuenta (opcional)</div>
+      <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Ingresar a la cuenta</div>
       <select value={accountId} onChange={e=>setAccountId(e.target.value)}
         style={{ width: '100%', marginBottom: 14, padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'Inter, sans-serif' }}>
-        <option value="">No registrar movimiento</option>
-        {accounts.filter(a=>!a.archived).map(a=><option key={a.id} value={a.id}>{a.name}</option>)}
+        {activeAccounts.length === 0 && <option value="">Sin cuentas disponibles</option>}
+        {activeAccounts.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}
       </select>
 
       <input value={note} onChange={e=>setNote(e.target.value)} placeholder="Nota (opcional)"
@@ -3111,9 +3208,11 @@ function CsvImportModal({ t, headers, rows, categories, accounts, onImport, onCl
 }
 
 /* ---------------------------------- PANTALLA DE BLOQUEO ---------------------------------- */
-function LockScreen({ t, actualPin, onUnlock }) {
+function LockScreen({ t, actualPin, biometricCredentialId, onUnlock }) {
   const [entry, setEntry] = useState('');
   const [shake, setShake] = useState(false);
+  const [biometricTried, setBiometricTried] = useState(false);
+  const attemptingRef = useRef(false);
 
   const press = (d) => {
     if (entry.length >= 4) return;
@@ -3127,12 +3226,34 @@ function LockScreen({ t, actualPin, onUnlock }) {
     }
   };
 
+  const tryBiometric = useCallback(async () => {
+    if (!biometricCredentialId || attemptingRef.current) return;
+    attemptingRef.current = true;
+    setBiometricTried(true);
+    try {
+      const ok = await verifyBiometricCredential(biometricCredentialId);
+      if (ok) onUnlock();
+    } catch { /* usuario canceló o falló — se queda en el PIN */ }
+    finally { attemptingRef.current = false; }
+  }, [biometricCredentialId, onUnlock]);
+
+  useEffect(() => { tryBiometric(); }, []);
+
   return (
     <div style={{ position: 'absolute', inset: 0, background: t.bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
       <div style={{ width: 52, height: 52, borderRadius: 16, background: t.surfaceAlt, border: `1px solid ${t.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
         <Icon name="Lock" size={22} color={t.accent} />
       </div>
       <div style={{ fontSize: 15, color: t.text, fontWeight: 600, marginBottom: 20, fontFamily: 'Fraunces, Georgia, serif' }}>Ingresa tu PIN</div>
+
+      {biometricCredentialId && (
+        <button onClick={tryBiometric}
+          style={{ display: 'flex', alignItems: 'center', gap: 8, background: t.surfaceAlt, border: `1px solid ${t.border}`, borderRadius: 20, padding: '9px 16px', marginBottom: 24, cursor: 'pointer' }}>
+          <Icon name="Fingerprint" size={16} color={t.accent} />
+          <span style={{ fontSize: 12.5, color: t.text, fontWeight: 600 }}>{biometricTried ? 'Intentar de nuevo' : 'Usar Face ID / Huella'}</span>
+        </button>
+      )}
+
       <div className={shake ? 'fz-shake' : ''} style={{ display: 'flex', gap: 12, marginBottom: 30 }}>
         {[0,1,2,3].map(i=>(
           <div key={i} style={{ width: 13, height: 13, borderRadius: '50%', background: i < entry.length ? t.accent : 'transparent', border: `1.5px solid ${t.border}` }} />
@@ -3288,6 +3409,44 @@ function App() {
   const [quickAddCat, setQuickAddCat] = useState(null);
   const [locked, setLocked] = useState(false);
 
+  const anyOverlayOpen = sheet !== null || modal.type !== null || quickAddCat !== null;
+
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const updateViewport = () => {
+      document.documentElement.style.setProperty('--fz-vvh', vv.height + 'px');
+      document.documentElement.style.setProperty('--fz-vvt', vv.offsetTop + 'px');
+    };
+    updateViewport();
+    vv.addEventListener('resize', updateViewport);
+    vv.addEventListener('scroll', updateViewport);
+    return () => {
+      vv.removeEventListener('resize', updateViewport);
+      vv.removeEventListener('scroll', updateViewport);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!anyOverlayOpen) return;
+    const scrollY = window.scrollY;
+    const body = document.body;
+    const prev = { position: body.style.position, top: body.style.top, left: body.style.left, right: body.style.right, width: body.style.width };
+    body.style.position = 'fixed';
+    body.style.top = `-${scrollY}px`;
+    body.style.left = '0';
+    body.style.right = '0';
+    body.style.width = '100%';
+    return () => {
+      body.style.position = prev.position;
+      body.style.top = prev.top;
+      body.style.left = prev.left;
+      body.style.right = prev.right;
+      body.style.width = prev.width;
+      window.scrollTo(0, scrollY);
+    };
+  }, [anyOverlayOpen]);
+
   useEffect(() => {
     (async () => {
       try {
@@ -3368,8 +3527,8 @@ function App() {
         select { -webkit-appearance: none; appearance: none; }
         input:focus, select:focus { border-color: ${t.accent} !important; }
         ::placeholder { color: ${t.textMuted}; opacity: 0.8; }
-        .fz-sheet-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: flex-end; z-index: 40; animation: fz-fade .18s ease; }
-        .fz-sheet { width: 100%; border-radius: 22px 22px 0 0; padding: 14px 20px 22px; max-height: 88%; overflow-y: auto; animation: fz-up .22s ease; }
+        .fz-sheet-backdrop { position: fixed; left: 0; right: 0; bottom: 0; top: var(--fz-vvt, 0px); height: var(--fz-vvh, 100%); max-width: 430px; margin: 0 auto; background: rgba(0,0,0,0.5); display: flex; align-items: flex-end; z-index: 40; animation: fz-fade .18s ease; }
+        .fz-sheet { width: 100%; border-radius: 22px 22px 0 0; padding: 14px 20px 22px; max-height: 88%; overflow-y: auto; -webkit-overflow-scrolling: touch; animation: fz-up .22s ease; }
         @keyframes fz-fade { from { opacity: 0; } to { opacity: 1; } }
         @keyframes fz-up { from { transform: translateY(24px); opacity: .4; } to { transform: translateY(0); opacity: 1; } }
         @keyframes fz-shake-kf { 10%,90% { transform: translateX(-2px); } 20%,80% { transform: translateX(4px); } 30%,50%,70% { transform: translateX(-8px); } 40%,60% { transform: translateX(8px); } }
@@ -3550,7 +3709,7 @@ function App() {
               <PinSetupModal t={t} onSave={(pin)=>{ setData(d=>({ ...d, settings: { ...d.settings, pin } })); closeModal(); }} onClose={closeModal} />
             )}
             {modal.type === 'pinDisable' && (
-              <PinDisableModal t={t} actualPin={data.settings.pin} onConfirm={()=>{ setData(d=>({ ...d, settings: { ...d.settings, pin: null } })); closeModal(); }} onClose={closeModal} />
+              <PinDisableModal t={t} actualPin={data.settings.pin} onConfirm={()=>{ setData(d=>({ ...d, settings: { ...d.settings, pin: null, biometricCredentialId: null } })); closeModal(); }} onClose={closeModal} />
             )}
             {modal.type === 'resetConfirm' && (
               <ResetConfirmModal t={t} onConfirm={()=>{ setData(DEFAULT_DATA); closeModal(); }} onClose={closeModal} />
@@ -3576,7 +3735,7 @@ function App() {
             )}
 
             {locked && data.settings.pin && (
-              <LockScreen t={t} actualPin={data.settings.pin} onUnlock={()=>setLocked(false)} />
+              <LockScreen t={t} actualPin={data.settings.pin} biometricCredentialId={data.settings.biometricCredentialId} onUnlock={()=>setLocked(false)} />
             )}
           </>
         )}
