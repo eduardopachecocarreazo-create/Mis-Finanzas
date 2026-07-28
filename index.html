@@ -744,13 +744,12 @@ const BALANCE_VIEWS = [
   { value: 'year', label: 'Año' },
 ];
 
-function InicioScreen({ data, setData, t, goHistorial, openSheet, onQuickAdd, onNavigate }) {
+function InicioScreen({ data, setData, t, goHistorial, openSheet, onQuickAdd, onNavigate, balanceHidden, setBalanceHidden }) {
   const { transactions, categories, settings, accounts, recurringTransactions, debts, savingsGoals, budgets, receivables } = data;
   const now = new Date();
   const curMonthKey = `${now.getFullYear()}-${pad(now.getMonth()+1)}`;
   const balanceView = settings.homeBalanceView || 'total';
   const setBalanceView = (v) => setData(d => ({ ...d, settings: { ...d.settings, homeBalanceView: v } }));
-  const [balanceHidden, setBalanceHidden] = useState(false);
 
   const freqCount = {};
   transactions.filter(tx=>tx.type==='expense').forEach(tx=>{ freqCount[tx.category] = (freqCount[tx.category]||0) + 1; });
@@ -3410,6 +3409,7 @@ function App() {
   const [loaded, setLoaded] = useState(false);
   const [tab, setTab] = useState('inicio');
   const [metasSubTab, setMetasSubTab] = useState('budgets');
+  const [balanceHidden, setBalanceHidden] = useState(false);
   const goTo = (nextTab, subTab) => { setTab(nextTab); if (subTab) setMetasSubTab(subTab); };
   const [sheet, setSheet] = useState(null); // null | {} (new) | transaction (edit)
   const [modal, setModal] = useState({ type: null });
@@ -3557,7 +3557,7 @@ function App() {
         ) : (
           <>
             <div style={{ paddingBottom: 84, minHeight: '100vh' }}>
-              {tab==='inicio' && <InicioScreen data={data} setData={setData} t={t} goHistorial={()=>setTab('historial')} openSheet={()=>setSheet({})} onQuickAdd={setQuickAddCat} onNavigate={goTo} />}
+              {tab==='inicio' && <InicioScreen data={data} setData={setData} t={t} goHistorial={()=>setTab('historial')} openSheet={()=>setSheet({})} onQuickAdd={setQuickAddCat} onNavigate={goTo} balanceHidden={balanceHidden} setBalanceHidden={setBalanceHidden} />}
               {tab==='historial' && <HistorialScreen data={data} t={t} onEdit={(tx)=>setSheet(tx)} />}
               {tab==='presupuestos' && <MetasScreen data={data} t={t} subTab={metasSubTab} setSubTab={setMetasSubTab} onEditBudget={(cat)=>setModal({ type: 'budget', cat })} onOpenModal={setModal} />}
               {tab==='reportes' && <ReportesScreen data={data} t={t} />}
