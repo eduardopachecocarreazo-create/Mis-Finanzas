@@ -3409,7 +3409,12 @@ function App() {
   const [loaded, setLoaded] = useState(false);
   const [tab, setTab] = useState('inicio');
   const [metasSubTab, setMetasSubTab] = useState('budgets');
-  const [balanceHidden, setBalanceHidden] = useState(false);
+  const [balanceHidden, setBalanceHidden] = useState(() => {
+    try { return localStorage.getItem('fz_balance_hidden') === '1'; } catch { return false; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem('fz_balance_hidden', balanceHidden ? '1' : '0'); } catch {}
+  }, [balanceHidden]);
   const goTo = (nextTab, subTab) => { setTab(nextTab); if (subTab) setMetasSubTab(subTab); };
   const [sheet, setSheet] = useState(null); // null | {} (new) | transaction (edit)
   const [modal, setModal] = useState({ type: null });
