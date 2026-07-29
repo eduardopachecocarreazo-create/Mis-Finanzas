@@ -110,7 +110,7 @@ const DEFAULT_DATA = {
   categories: DEFAULT_CATEGORIES,
   budgets: {},
   settings: {
-    theme: 'dark', palette: 'nocturne', currency: 'COP', pin: null, biometricCredentialId: null, lastBackupDate: null, onboardingCompleted: false, userName: '',
+    theme: 'dark', palette: 'nocturne', appIcon: 'bars', currency: 'COP', pin: null, biometricCredentialId: null, lastBackupDate: null, onboardingCompleted: false, userName: '',
     notifications: { dailyReminder: false, dailyReminderTime: '21:00', budgetAlerts: true, upcomingPayments: true, lastCheckedDate: null }
   },
   accounts: DEFAULT_ACCOUNTS,
@@ -161,6 +161,14 @@ const PALETTES = [
   { id: 'emerald', label: 'Esmeralda', swatch: '#5FB88A' },
   { id: 'purple', label: 'Púrpura', swatch: '#A98FD9' },
   { id: 'nocturne', label: 'Nocturne', swatch: '#C9A44C' },
+];
+
+const ICON_SETS = [
+  { id: 'bars', label: 'Barras premium', description: 'El ícono actual, renovado: barras con degradado y resplandor.' },
+  { id: 'curva', label: 'Curva simple', description: 'La línea de tendencia de Inicio, con su sombra degradada.' },
+  { id: 'arco', label: 'Arco de progreso', description: 'Un dial de meta de ahorro, al 75%.' },
+  { id: 'monograma', label: 'Monograma', description: 'Tus iniciales en serif, como un sello de banca privada.' },
+  { id: 'terraza', label: 'Terraza', description: 'Una silueta arquitectónica escalonada, no barras sueltas.' },
 ];
 
 const MONTHS_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
@@ -1752,6 +1760,7 @@ function AjustesScreen({ data, setData, t, onOpenModal }) {
 
   const setTheme = (theme) => setData(d => ({ ...d, settings: { ...d.settings, theme } }));
   const setPalette = (palette) => setData(d => ({ ...d, settings: { ...d.settings, palette } }));
+  const setAppIcon = (appIcon) => setData(d => ({ ...d, settings: { ...d.settings, appIcon } }));
   const setUserName = (userName) => setData(d => ({ ...d, settings: { ...d.settings, userName } }));
   const setCurrency = (currency) => setData(d => ({ ...d, settings: { ...d.settings, currency } }));
 
@@ -1823,6 +1832,26 @@ function AjustesScreen({ data, setData, t, onOpenModal }) {
               );
             })}
           </div>
+        </div>
+
+        <SectionLabel t={t}>Ícono de la app</SectionLabel>
+        <div style={{ background: t.glow ? t.surface + 'CC' : t.surface, border: `1px solid ${t.border}`, borderRadius: t.glow ? 20 : 14, padding: 14, marginBottom: 6, backdropFilter: t.glow ? 'blur(10px)' : undefined, WebkitBackdropFilter: t.glow ? 'blur(10px)' : undefined }}>
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+            {ICON_SETS.map(ic=>{
+              const active = (settings.appIcon || 'bars') === ic.id;
+              return (
+                <button key={ic.id} onClick={()=>setAppIcon(ic.id)} title={ic.description}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', cursor: 'pointer', padding: 2, width: 60 }}>
+                  <img src={`icons/${ic.id}/icon-192.png`} alt={ic.label} width={48} height={48}
+                    style={{ borderRadius: 12, border: active ? `2px solid ${t.accent}` : '2px solid transparent', boxShadow: active ? `0 0 0 2px ${t.surface}, 0 0 14px ${t.accent}55` : 'none' }} />
+                  <span style={{ fontSize: 10, color: active ? t.text : t.textMuted, fontWeight: active ? 700 : 500, textAlign: 'center', lineHeight: 1.2 }}>{ic.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <div style={{ textAlign: 'center', fontSize: 11, color: t.textMuted, marginBottom: 18, lineHeight: 1.5 }}>
+          Si ya agregaste la app a tu pantalla de inicio, quitala y volvela a agregar para ver el ícono nuevo ahí — esto no borra tus datos.
         </div>
 
         <SectionLabel t={t}>Moneda</SectionLabel>
@@ -3459,6 +3488,31 @@ function App() {
     if (!loaded) return;
     checkNotifications(data, setData);
   }, [loaded]);
+
+  useEffect(() => {
+    if (!loaded) return;
+    const iconId = data.settings.appIcon || 'bars';
+    const base = `icons/${iconId}/`;
+    const setLink = (rel, href) => {
+      let link = document.querySelector(`link[rel="${rel}"]`);
+      if (!link) { link = document.createElement('link'); link.rel = rel; document.head.appendChild(link); }
+      link.href = href;
+    };
+    setLink('icon', `${base}icon-192.png`);
+    setLink('apple-touch-icon', `${base}icon-192.png`);
+    fetch('manifest.json').then(r => r.json()).then(manifest => {
+      const updated = {
+        ...manifest,
+        icons: [
+          { src: `${base}icon-192.png`, sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: `${base}icon-512.png`, sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: `${base}icon-maskable-512.png`, sizes: '512x512', type: 'image/png', purpose: 'maskable' }
+        ]
+      };
+      const blob = new Blob([JSON.stringify(updated)], { type: 'application/json' });
+      setLink('manifest', URL.createObjectURL(blob));
+    }).catch(() => {});
+  }, [loaded, data.settings.appIcon]);
 
   const t = (THEMES[data.settings.palette] || THEMES.gold)[data.settings.theme] || THEMES.gold.dark;
 
