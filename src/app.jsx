@@ -4,15 +4,6 @@ import {
   PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis,
   Tooltip, LineChart, Line, AreaChart, Area, CartesianGrid
 } from 'recharts';
-
-/* ---------------------------------- GRAFICOS PREMIUM ---------------------------------- */
-function lastPointDot(color, length) {
-  return (props) => (
-    props.index === length - 1
-      ? <circle key={`dot-${props.index}`} cx={props.cx} cy={props.cy} r={3.5} fill={color} stroke="none" />
-      : null
-  );
-}
 import {
   Home, Clock, Target, PieChart as PieIcon, Settings, Plus, X, Check, Lock,
   Search, TrendingUp, TrendingDown, Wallet, CreditCard, Banknote,
@@ -24,6 +15,16 @@ import {
   Info, Upload, FileJson, FileSpreadsheet, AlertTriangle, RefreshCw, Fingerprint,
   Eye, EyeOff
 } from 'lucide-react';
+
+const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev';
+
+function lastPointDot(color, length) {
+  return (props) => (
+    props.index === length - 1
+      ? <circle key={`dot-${props.index}`} cx={props.cx} cy={props.cy} r={3.5} fill={color} stroke="none" />
+      : null
+  );
+}
 
 /* ---------------------------------- ICONOS ---------------------------------- */
 const ICONS = {
@@ -602,7 +603,7 @@ function SegmentedControl({ options, value, onChange, t }) {
             flex: 1, padding: '9px 10px', borderRadius: 8, border: 'none', cursor: 'pointer',
             background: value === opt.value ? t.accent : 'transparent',
             color: value === opt.value ? t.accentText : t.textMuted,
-            fontWeight: 600, fontSize: 13.5, fontFamily: 'Inter, sans-serif', transition: 'all .2s ease'
+            fontWeight: 600, fontSize: 13.5, fontFamily: 'var(--font-body)', transition: 'all .2s ease'
           }}
         >
           {opt.label}
@@ -1087,7 +1088,7 @@ function HistorialScreen({ data, t, onEdit }) {
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, background: t.surfaceAlt, border: `1px solid ${t.border}`, borderRadius: 10, padding: '9px 12px' }}>
             <Icon name="Search" size={15} color={t.textMuted} />
             <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscar por nota o categoría"
-              style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: 13, color: t.text, flex: 1, fontFamily: 'Inter, sans-serif' }} />
+              style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: 13, color: t.text, flex: 1, fontFamily: 'var(--font-body)' }} />
           </div>
           <button onClick={()=>setShowFilters(s=>!s)} style={{ position: 'relative', width: 38, height: 38, borderRadius: 10, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
             background: showFilters ? t.accent+'22' : t.surfaceAlt, border: `1px solid ${showFilters ? t.accent : t.border}` }}>
@@ -1106,19 +1107,19 @@ function HistorialScreen({ data, t, onEdit }) {
         {showFilters && (
           <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 14, padding: 14, marginBottom: 16 }}>
             <select value={filterCat} onChange={e=>setFilterCat(e.target.value)}
-              style={{ width: '100%', marginBottom: 8, padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13, fontFamily: 'Inter, sans-serif' }}>
+              style={{ width: '100%', marginBottom: 8, padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13, fontFamily: 'var(--font-body)' }}>
               <option value="all">Todas las categorías</option>
               {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
             <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
               <select value={filterAccount} onChange={e=>setFilterAccount(e.target.value)}
-                style={{ flex: 1, padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13, fontFamily: 'Inter, sans-serif' }}>
+                style={{ flex: 1, padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13, fontFamily: 'var(--font-body)' }}>
                 <option value="all">Todas las cuentas</option>
                 {accounts.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
               </select>
               {(tags||[]).length > 0 && (
                 <select value={filterTag} onChange={e=>setFilterTag(e.target.value)}
-                  style={{ flex: 1, padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13, fontFamily: 'Inter, sans-serif' }}>
+                  style={{ flex: 1, padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13, fontFamily: 'var(--font-body)' }}>
                   <option value="all">Todas las etiquetas</option>
                   {tags.map(tg => <option key={tg} value={tg}>{tg}</option>)}
                 </select>
@@ -1128,22 +1129,22 @@ function HistorialScreen({ data, t, onEdit }) {
             <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Rango de fechas</div>
             <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
               <input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)}
-                style={{ flex: 1, padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 12.5, fontFamily: 'Inter, sans-serif' }} />
+                style={{ flex: 1, padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 12.5, fontFamily: 'var(--font-body)' }} />
               <input type="date" value={dateTo} onChange={e=>setDateTo(e.target.value)}
-                style={{ flex: 1, padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 12.5, fontFamily: 'Inter, sans-serif' }} />
+                style={{ flex: 1, padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 12.5, fontFamily: 'var(--font-body)' }} />
             </div>
 
             <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Rango de monto</div>
             <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
               <MoneyInput value={amountMin} onChange={setAmountMin} placeholder="Mínimo"
-                style={{ flex: 1, padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 12.5, fontFamily: 'Inter, sans-serif' }} />
+                style={{ flex: 1, padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 12.5, fontFamily: 'var(--font-body)' }} />
               <MoneyInput value={amountMax} onChange={setAmountMax} placeholder="Máximo"
-                style={{ flex: 1, padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 12.5, fontFamily: 'Inter, sans-serif' }} />
+                style={{ flex: 1, padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 12.5, fontFamily: 'var(--font-body)' }} />
             </div>
 
             <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Ordenar por</div>
             <select value={sortBy} onChange={e=>setSortBy(e.target.value)}
-              style={{ width: '100%', marginBottom: 10, padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13, fontFamily: 'Inter, sans-serif' }}>
+              style={{ width: '100%', marginBottom: 10, padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13, fontFamily: 'var(--font-body)' }}>
               <option value="date_desc">Fecha (recientes primero)</option>
               <option value="date_asc">Fecha (antiguos primero)</option>
               <option value="amount_desc">Monto (mayor primero)</option>
@@ -1495,9 +1496,9 @@ function ReportesScreen({ data, t }) {
         {periodType === 'custom' ? (
           <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
             <input type="date" value={customFrom} onChange={e=>setCustomFrom(e.target.value)}
-              style={{ flex: 1, padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 12.5, fontFamily: 'Inter, sans-serif' }} />
+              style={{ flex: 1, padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 12.5, fontFamily: 'var(--font-body)' }} />
             <input type="date" value={customTo} onChange={e=>setCustomTo(e.target.value)}
-              style={{ flex: 1, padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 12.5, fontFamily: 'Inter, sans-serif' }} />
+              style={{ flex: 1, padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 12.5, fontFamily: 'var(--font-body)' }} />
           </div>
         ) : (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
@@ -1513,7 +1514,7 @@ function ReportesScreen({ data, t }) {
 
         {(tags||[]).length > 0 && (
           <select value={filterTag} onChange={e=>setFilterTag(e.target.value)}
-            style={{ width: '100%', marginBottom: 16, padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13, fontFamily: 'Inter, sans-serif' }}>
+            style={{ width: '100%', marginBottom: 16, padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13, fontFamily: 'var(--font-body)' }}>
             <option value="all">Todas las etiquetas</option>
             {tags.map(tg => <option key={tg} value={tg}>{tg}</option>)}
           </select>
@@ -1789,7 +1790,7 @@ function AjustesScreen({ data, setData, t, onOpenModal }) {
 
         <SectionLabel t={t}>Perfil</SectionLabel>
         <input value={settings.userName || ''} onChange={e=>setUserName(e.target.value)} placeholder="Tu nombre"
-          style={{ width: '100%', marginBottom: 18, padding: '11px 12px', borderRadius: 12, border: `1px solid ${t.border}`, background: t.surface, color: t.text, fontSize: 13.5, fontFamily: 'Inter, sans-serif', outline: 'none' }} />
+          style={{ width: '100%', marginBottom: 18, padding: '11px 12px', borderRadius: 12, border: `1px solid ${t.border}`, background: t.surface, color: t.text, fontSize: 13.5, fontFamily: 'var(--font-body)', outline: 'none' }} />
 
         <SectionLabel t={t}>Apariencia</SectionLabel>
         <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
@@ -1814,7 +1815,7 @@ function AjustesScreen({ data, setData, t, onOpenModal }) {
 
         <SectionLabel t={t}>Moneda</SectionLabel>
         <select value={settings.currency} onChange={e=>setCurrency(e.target.value)}
-          style={{ width: '100%', marginBottom: 18, padding: '11px 12px', borderRadius: 12, border: `1px solid ${t.border}`, background: t.surface, color: t.text, fontSize: 13.5, fontFamily: 'Inter, sans-serif' }}>
+          style={{ width: '100%', marginBottom: 18, padding: '11px 12px', borderRadius: 12, border: `1px solid ${t.border}`, background: t.surface, color: t.text, fontSize: 13.5, fontFamily: 'var(--font-body)' }}>
           {CURRENCIES.map(c=><option key={c} value={c}>{c}</option>)}
         </select>
 
@@ -1898,7 +1899,7 @@ function AjustesScreen({ data, setData, t, onOpenModal }) {
           {notifications.dailyReminder && (
             <div style={{ padding: '0 14px 12px 40px' }}>
               <input type="time" value={notifications.dailyReminderTime} onChange={e=>setNotif('dailyReminderTime', e.target.value)}
-                style={{ padding: '7px 10px', borderRadius: 8, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 12.5, fontFamily: 'Inter, sans-serif' }} />
+                style={{ padding: '7px 10px', borderRadius: 8, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 12.5, fontFamily: 'var(--font-body)' }} />
             </div>
           )}
           <NotificationToggle t={t} label="Alertas de presupuesto" desc="Cuando una categoría supera el 80% del límite"
@@ -1952,7 +1953,8 @@ function AjustesScreen({ data, setData, t, onOpenModal }) {
             <div style={{ fontSize: 11, color: t.textMuted }}>{updateStatus || 'Toca aquí si crees que te falta una versión nueva'}</div>
           </div>
         </button>
-        <div style={{ textAlign: 'center', fontSize: 11, color: t.textMuted, marginBottom: 18 }}>Esto nunca borra tus datos, solo refresca el código de la app.</div>
+        <div style={{ textAlign: 'center', fontSize: 11, color: t.textMuted, marginBottom: 4 }}>Esto nunca borra tus datos, solo refresca el código de la app.</div>
+        <div style={{ textAlign: 'center', fontSize: 11, color: t.textMuted, marginBottom: 18, fontVariantNumeric: 'tabular-nums' }}>Versión instalada: <span style={{ color: t.text, fontWeight: 600 }}>{APP_VERSION}</span></div>
 
         <SectionLabel t={t}>Datos</SectionLabel>
         <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 14, overflow: 'hidden', marginBottom: 6 }}>
@@ -2107,7 +2109,7 @@ function TransactionSheet({ t, categories, accounts, settings, allTags, initial,
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Fecha</div>
             <input type="date" value={date} onChange={e=>setDate(e.target.value)}
-              style={{ width: '100%', padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13, fontFamily: 'Inter, sans-serif' }} />
+              style={{ width: '100%', padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13, fontFamily: 'var(--font-body)' }} />
           </div>
         </div>
 
@@ -2146,7 +2148,7 @@ function TransactionSheet({ t, categories, accounts, settings, allTags, initial,
         )}
 
         <input value={note} onChange={e=>setNote(e.target.value)} placeholder="Nota (opcional)"
-          style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13, marginBottom: 12, fontFamily: 'Inter, sans-serif', outline: 'none' }} />
+          style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13, marginBottom: 12, fontFamily: 'var(--font-body)', outline: 'none' }} />
 
         {tags.length > 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
@@ -2164,7 +2166,7 @@ function TransactionSheet({ t, categories, accounts, settings, allTags, initial,
           <input value={tagInput} onChange={e=>setTagInput(e.target.value)}
             onKeyDown={e=>{ if (e.key==='Enter') { e.preventDefault(); addTag(tagInput); } }}
             placeholder="Agregar etiqueta y presiona Enter"
-            style={{ width: '100%', padding: '9px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 12.5, fontFamily: 'Inter, sans-serif', outline: 'none' }} />
+            style={{ width: '100%', padding: '9px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 12.5, fontFamily: 'var(--font-body)', outline: 'none' }} />
           {tagInput.trim() && tagSuggestions.length > 0 && (
             <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, background: t.surface, border: `1px solid ${t.border}`, borderRadius: 10, overflow: 'hidden', zIndex: 5 }}>
               {tagSuggestions.slice(0,5).map(tg=>(
@@ -2254,7 +2256,7 @@ function BudgetModal({ t, cat, current, settings, onSave, onRemove, onClose }) {
     <ModalShell t={t} title={`Presupuesto · ${cat.name}`} onClose={onClose}>
       <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Límite mensual</div>
       <MoneyInput value={val} onChange={setVal} placeholder="0" autoFocus
-        style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 16, marginBottom: 18, fontFamily: 'Inter, sans-serif', outline: 'none' }} />
+        style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 16, marginBottom: 18, fontFamily: 'var(--font-body)', outline: 'none' }} />
       <div style={{ display: 'flex', gap: 10 }}>
         {current > 0 && (
           <button onClick={onRemove} style={{ padding: '12px 14px', borderRadius: 12, border: `1px solid ${t.border}`, background: 'transparent', color: t.textMuted, fontSize: 13, cursor: 'pointer' }}>Quitar</button>
@@ -2277,7 +2279,7 @@ function CategoryModal({ t, initial, otherCategories, hasTransactions, onSave, o
   return (
     <ModalShell t={t} title={initial ? 'Editar categoría' : 'Nueva categoría'} onClose={onClose}>
       <input value={name} onChange={e=>setName(e.target.value)} placeholder="Nombre de la categoría" autoFocus
-        style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, marginBottom: 14, fontFamily: 'Inter, sans-serif', outline: 'none' }} />
+        style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, marginBottom: 14, fontFamily: 'var(--font-body)', outline: 'none' }} />
       <div style={{ marginBottom: 14, opacity: (initial && hasTransactions) ? 0.5 : 1, pointerEvents: (initial && hasTransactions) ? 'none' : 'auto' }}>
         <SegmentedControl t={t} value={type} onChange={setType} options={[{value:'expense',label:'Gasto'},{value:'income',label:'Ingreso'}]} />
       </div>
@@ -2318,7 +2320,7 @@ function CategoryModal({ t, initial, otherCategories, hasTransactions, onSave, o
           <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Fusionar con otra categoría</div>
           <div style={{ fontSize: 11.5, color: t.textMuted, marginBottom: 10, lineHeight: 1.4 }}>Todos los movimientos de "{initial.name}" pasarán a la categoría que elijas, y "{initial.name}" se eliminará.</div>
           <select value={mergeTarget} onChange={e=>setMergeTarget(e.target.value)}
-            style={{ width: '100%', marginBottom: 10, padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13, fontFamily: 'Inter, sans-serif' }}>
+            style={{ width: '100%', marginBottom: 10, padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13, fontFamily: 'var(--font-body)' }}>
             <option value="">Selecciona una categoría destino</option>
             {mergeCandidates.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
@@ -2363,7 +2365,7 @@ function AccountModal({ t, settings, initial, onSave, onArchive, onClose }) {
   return (
     <ModalShell t={t} title={initial ? 'Editar cuenta' : 'Nueva cuenta'} onClose={onClose}>
       <input value={name} onChange={e=>setName(e.target.value)} placeholder="Nombre de la cuenta" autoFocus
-        style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, marginBottom: 14, fontFamily: 'Inter, sans-serif', outline: 'none' }} />
+        style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, marginBottom: 14, fontFamily: 'var(--font-body)', outline: 'none' }} />
 
       <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Tipo de cuenta</div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
@@ -2398,12 +2400,12 @@ function AccountModal({ t, settings, initial, onSave, onArchive, onClose }) {
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>{initial ? 'Saldo inicial' : 'Saldo inicial'}</div>
           <MoneyInput value={initialBalance} onChange={setInitialBalance} placeholder="0"
-            style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'Inter, sans-serif', outline: 'none' }} />
+            style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'var(--font-body)', outline: 'none' }} />
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Moneda</div>
           <select value={currency} onChange={e=>setCurrency(e.target.value)}
-            style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'Inter, sans-serif' }}>
+            style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'var(--font-body)' }}>
             {CURRENCIES.map(c=><option key={c} value={c}>{c}</option>)}
           </select>
         </div>
@@ -2507,7 +2509,7 @@ function RecurringModal({ t, categories, accounts, settings, initial, onSave, on
 
       <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Frecuencia</div>
       <select value={frequency} onChange={e=>setFrequency(e.target.value)}
-        style={{ width: '100%', marginBottom: 14, padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'Inter, sans-serif' }}>
+        style={{ width: '100%', marginBottom: 14, padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'var(--font-body)' }}>
         {FREQUENCIES.map(f=><option key={f.value} value={f.value}>{f.label}</option>)}
       </select>
 
@@ -2515,13 +2517,13 @@ function RecurringModal({ t, categories, accounts, settings, initial, onSave, on
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Fecha inicio</div>
           <input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)}
-            style={{ width: '100%', padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13, fontFamily: 'Inter, sans-serif' }} />
+            style={{ width: '100%', padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13, fontFamily: 'var(--font-body)' }} />
         </div>
         {usesDayOfMonth && (
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Día del mes</div>
             <input type="number" min="1" max="31" value={dayOfMonth} onChange={e=>setDayOfMonth(e.target.value)} placeholder="1-31"
-              style={{ width: '100%', padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13, fontFamily: 'Inter, sans-serif' }} />
+              style={{ width: '100%', padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13, fontFamily: 'var(--font-body)' }} />
           </div>
         )}
       </div>
@@ -2535,11 +2537,11 @@ function RecurringModal({ t, categories, accounts, settings, initial, onSave, on
       </button>
       {hasEndDate && (
         <input type="date" value={endDate} onChange={e=>setEndDate(e.target.value)}
-          style={{ width: '100%', marginBottom: 14, padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13, fontFamily: 'Inter, sans-serif' }} />
+          style={{ width: '100%', marginBottom: 14, padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13, fontFamily: 'var(--font-body)' }} />
       )}
 
       <input value={note} onChange={e=>setNote(e.target.value)} placeholder="Nota (opcional)"
-        style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13, marginBottom: 18, fontFamily: 'Inter, sans-serif', outline: 'none' }} />
+        style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13, marginBottom: 18, fontFamily: 'var(--font-body)', outline: 'none' }} />
 
       <div style={{ display: 'flex', gap: 10 }}>
         {initial && onDelete && (
@@ -2583,7 +2585,7 @@ function GoalModal({ t, accounts, settings, initial, onSave, onDelete, onClose }
   return (
     <ModalShell t={t} title={initial ? 'Editar meta' : 'Nueva meta de ahorro'} onClose={onClose}>
       <input value={name} onChange={e=>setName(e.target.value)} placeholder="Nombre de la meta" autoFocus
-        style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, marginBottom: 14, fontFamily: 'Inter, sans-serif', outline: 'none' }} />
+        style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, marginBottom: 14, fontFamily: 'var(--font-body)', outline: 'none' }} />
 
       <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Ícono</div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
@@ -2604,7 +2606,7 @@ function GoalModal({ t, accounts, settings, initial, onSave, onDelete, onClose }
 
       <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Monto objetivo</div>
       <MoneyInput value={targetAmount} onChange={setTargetAmount} placeholder="0"
-        style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, marginBottom: 14, fontFamily: 'Inter, sans-serif', outline: 'none' }} />
+        style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, marginBottom: 14, fontFamily: 'var(--font-body)', outline: 'none' }} />
 
       <button onClick={()=>setHasDeadline(v=>!v)}
         style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, background: t.surfaceAlt, border: `1px solid ${t.border}`, borderRadius: 12, padding: '11px 12px', cursor: 'pointer', marginBottom: hasDeadline?10:14 }}>
@@ -2615,12 +2617,12 @@ function GoalModal({ t, accounts, settings, initial, onSave, onDelete, onClose }
       </button>
       {hasDeadline && (
         <input type="date" value={deadline} onChange={e=>setDeadline(e.target.value)}
-          style={{ width: '100%', marginBottom: 14, padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13, fontFamily: 'Inter, sans-serif' }} />
+          style={{ width: '100%', marginBottom: 14, padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13, fontFamily: 'var(--font-body)' }} />
       )}
 
       <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Cuenta vinculada (opcional)</div>
       <select value={linkedAccountId} onChange={e=>setLinkedAccountId(e.target.value)}
-        style={{ width: '100%', marginBottom: 18, padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'Inter, sans-serif' }}>
+        style={{ width: '100%', marginBottom: 18, padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'var(--font-body)' }}>
         <option value="">Ninguna</option>
         {accounts.filter(a=>!a.archived).map(a=><option key={a.id} value={a.id}>{a.name}</option>)}
       </select>
@@ -2673,14 +2675,14 @@ function ContributeModal({ t, accounts, settings, goal, onSave, onClose }) {
             {direction === 'retiro' ? 'Cuenta de destino' : 'Cuenta de origen'}
           </div>
           <select value={otherAccountId} onChange={e=>setOtherAccountId(e.target.value)}
-            style={{ width: '100%', marginBottom: 14, padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'Inter, sans-serif' }}>
+            style={{ width: '100%', marginBottom: 14, padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'var(--font-body)' }}>
             {otherAccounts.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}
           </select>
         </>
       )}
 
       <input value={note} onChange={e=>setNote(e.target.value)} placeholder="Nota (opcional)"
-        style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13, marginBottom: 18, fontFamily: 'Inter, sans-serif', outline: 'none' }} />
+        style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13, marginBottom: 18, fontFamily: 'var(--font-body)', outline: 'none' }} />
 
       <button disabled={!canSave} onClick={save}
         style={{ width: '100%', padding: '12px', borderRadius: 12, border: 'none', background: canSave?t.accent:t.surfaceAlt, color: canSave?t.accentText:t.textMuted, fontWeight: 700, fontSize: 13.5, cursor: canSave?'pointer':'not-allowed' }}>
@@ -2731,10 +2733,10 @@ function DebtModal({ t, accounts, settings, initial, onSave, onDelete, onClose }
   return (
     <ModalShell t={t} title={initial ? 'Editar deuda' : 'Nueva deuda'} onClose={onClose}>
       <input value={name} onChange={e=>setName(e.target.value)} placeholder="Nombre de la deuda (ej. Le debo a Pablo)" autoFocus
-        style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, marginBottom: 14, fontFamily: 'Inter, sans-serif', outline: 'none' }} />
+        style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, marginBottom: 14, fontFamily: 'var(--font-body)', outline: 'none' }} />
 
       <input value={note} onChange={e=>setNote(e.target.value)} placeholder="Nota (ej. motivo: perfumes)"
-        style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, marginBottom: 14, fontFamily: 'Inter, sans-serif', outline: 'none' }} />
+        style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, marginBottom: 14, fontFamily: 'var(--font-body)', outline: 'none' }} />
 
       <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Tipo de deuda</div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
@@ -2759,12 +2761,12 @@ function DebtModal({ t, accounts, settings, initial, onSave, onDelete, onClose }
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Monto original</div>
           <MoneyInput value={originalAmount} onChange={setOriginalAmount} placeholder="0"
-            style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'Inter, sans-serif', outline: 'none' }} />
+            style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'var(--font-body)', outline: 'none' }} />
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Saldo actual</div>
           <MoneyInput value={currentBalance} onChange={setCurrentBalance} placeholder={originalAmount || '0'}
-            style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'Inter, sans-serif', outline: 'none' }} />
+            style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'var(--font-body)', outline: 'none' }} />
         </div>
       </div>
 
@@ -2772,12 +2774,12 @@ function DebtModal({ t, accounts, settings, initial, onSave, onDelete, onClose }
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Tasa anual %</div>
           <input type="number" min="0" step="0.1" value={interestRate} onChange={e=>setInterestRate(e.target.value)} placeholder="Opcional"
-            style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'Inter, sans-serif', outline: 'none' }} />
+            style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'var(--font-body)', outline: 'none' }} />
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Cuota mínima</div>
           <MoneyInput value={minimumPayment} onChange={setMinimumPayment} placeholder="Opcional"
-            style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'Inter, sans-serif', outline: 'none' }} />
+            style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'var(--font-body)', outline: 'none' }} />
         </div>
       </div>
 
@@ -2785,18 +2787,18 @@ function DebtModal({ t, accounts, settings, initial, onSave, onDelete, onClose }
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Día de pago</div>
           <input type="number" min="1" max="31" value={dueDate} onChange={e=>setDueDate(e.target.value)} placeholder="1-31"
-            style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'Inter, sans-serif', outline: 'none' }} />
+            style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'var(--font-body)', outline: 'none' }} />
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Fecha inicio</div>
           <input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)}
-            style={{ width: '100%', padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13, fontFamily: 'Inter, sans-serif' }} />
+            style={{ width: '100%', padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13, fontFamily: 'var(--font-body)' }} />
         </div>
       </div>
 
       <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Cuenta vinculada (opcional)</div>
       <select value={linkedAccountId} onChange={e=>setLinkedAccountId(e.target.value)}
-        style={{ width: '100%', marginBottom: 18, padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'Inter, sans-serif' }}>
+        style={{ width: '100%', marginBottom: 18, padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'var(--font-body)' }}>
         <option value="">Ninguna</option>
         {accounts.filter(a=>!a.archived).map(a=><option key={a.id} value={a.id}>{a.name}</option>)}
       </select>
@@ -2838,13 +2840,13 @@ function DebtPaymentModal({ t, accounts, settings, debt, onSave, onClose }) {
 
       <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Descontar de la cuenta</div>
       <select value={accountId} onChange={e=>setAccountId(e.target.value)}
-        style={{ width: '100%', marginBottom: 14, padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'Inter, sans-serif' }}>
+        style={{ width: '100%', marginBottom: 14, padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'var(--font-body)' }}>
         {activeAccounts.length === 0 && <option value="">Sin cuentas disponibles</option>}
         {activeAccounts.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}
       </select>
 
       <input value={note} onChange={e=>setNote(e.target.value)} placeholder="Nota (opcional)"
-        style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13, marginBottom: 18, fontFamily: 'Inter, sans-serif', outline: 'none' }} />
+        style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13, marginBottom: 18, fontFamily: 'var(--font-body)', outline: 'none' }} />
 
       <button disabled={!canSave} onClick={save}
         style={{ width: '100%', padding: '12px', borderRadius: 12, border: 'none', background: canSave?t.accent:t.surfaceAlt, color: canSave?t.accentText:t.textMuted, fontWeight: 700, fontSize: 13.5, cursor: canSave?'pointer':'not-allowed' }}>
@@ -2891,10 +2893,10 @@ function ReceivableModal({ t, accounts, settings, initial, onSave, onDelete, onC
   return (
     <ModalShell t={t} title={initial ? 'Editar por cobrar' : 'Nueva cuenta por cobrar'} onClose={onClose}>
       <input value={name} onChange={e=>setName(e.target.value)} placeholder="Nombre (ej. Me debe Pablo)" autoFocus
-        style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, marginBottom: 14, fontFamily: 'Inter, sans-serif', outline: 'none' }} />
+        style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, marginBottom: 14, fontFamily: 'var(--font-body)', outline: 'none' }} />
 
       <input value={note} onChange={e=>setNote(e.target.value)} placeholder="Nota (ej. motivo: patines)"
-        style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, marginBottom: 14, fontFamily: 'Inter, sans-serif', outline: 'none' }} />
+        style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, marginBottom: 14, fontFamily: 'var(--font-body)', outline: 'none' }} />
 
       <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Tipo</div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
@@ -2919,12 +2921,12 @@ function ReceivableModal({ t, accounts, settings, initial, onSave, onDelete, onC
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Monto original</div>
           <MoneyInput value={originalAmount} onChange={setOriginalAmount} placeholder="0"
-            style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'Inter, sans-serif', outline: 'none' }} />
+            style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'var(--font-body)', outline: 'none' }} />
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Saldo pendiente</div>
           <MoneyInput value={currentBalance} onChange={setCurrentBalance} placeholder={originalAmount || '0'}
-            style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'Inter, sans-serif', outline: 'none' }} />
+            style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'var(--font-body)', outline: 'none' }} />
         </div>
       </div>
 
@@ -2932,18 +2934,18 @@ function ReceivableModal({ t, accounts, settings, initial, onSave, onDelete, onC
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Día de cobro</div>
           <input type="number" min="1" max="31" value={dueDate} onChange={e=>setDueDate(e.target.value)} placeholder="1-31"
-            style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'Inter, sans-serif', outline: 'none' }} />
+            style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'var(--font-body)', outline: 'none' }} />
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Fecha inicio</div>
           <input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)}
-            style={{ width: '100%', padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13, fontFamily: 'Inter, sans-serif' }} />
+            style={{ width: '100%', padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13, fontFamily: 'var(--font-body)' }} />
         </div>
       </div>
 
       <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Cuenta vinculada (opcional)</div>
       <select value={linkedAccountId} onChange={e=>setLinkedAccountId(e.target.value)}
-        style={{ width: '100%', marginBottom: 18, padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'Inter, sans-serif' }}>
+        style={{ width: '100%', marginBottom: 18, padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'var(--font-body)' }}>
         <option value="">Ninguna</option>
         {accounts.filter(a=>!a.archived).map(a=><option key={a.id} value={a.id}>{a.name}</option>)}
       </select>
@@ -2985,13 +2987,13 @@ function ReceivablePaymentModal({ t, accounts, settings, receivable, onSave, onC
 
       <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Ingresar a la cuenta</div>
       <select value={accountId} onChange={e=>setAccountId(e.target.value)}
-        style={{ width: '100%', marginBottom: 14, padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'Inter, sans-serif' }}>
+        style={{ width: '100%', marginBottom: 14, padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'var(--font-body)' }}>
         {activeAccounts.length === 0 && <option value="">Sin cuentas disponibles</option>}
         {activeAccounts.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}
       </select>
 
       <input value={note} onChange={e=>setNote(e.target.value)} placeholder="Nota (opcional)"
-        style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13, marginBottom: 18, fontFamily: 'Inter, sans-serif', outline: 'none' }} />
+        style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13, marginBottom: 18, fontFamily: 'var(--font-body)', outline: 'none' }} />
 
       <button disabled={!canSave} onClick={save}
         style={{ width: '100%', padding: '12px', borderRadius: 12, border: 'none', background: canSave?t.accent:t.surfaceAlt, color: canSave?t.accentText:t.textMuted, fontWeight: 700, fontSize: 13.5, cursor: canSave?'pointer':'not-allowed' }}>
@@ -3126,7 +3128,7 @@ function CsvImportModal({ t, headers, rows, categories, accounts, onImport, onCl
         <div key={f.label} style={{ marginBottom: 10 }}>
           <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>{f.label}</div>
           <select value={f.val} onChange={e=>f.set(e.target.value)}
-            style={{ width: '100%', padding: '8px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 12.5, fontFamily: 'Inter, sans-serif' }}>
+            style={{ width: '100%', padding: '8px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 12.5, fontFamily: 'var(--font-body)' }}>
             {!f.required && <option value="">— No usar —</option>}
             {headers.map((h,i)=><option key={i} value={i}>{h || `Columna ${i+1}`}</option>)}
           </select>
@@ -3289,7 +3291,7 @@ function OnboardingScreen({ t, onComplete }) {
         <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Paso 1 de 3</div>
         <div style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 21, color: t.text, fontWeight: 600, marginBottom: 18 }}>¿Cuál es tu moneda principal?</div>
         <select value={currency} onChange={e=>setCurrency(e.target.value)}
-          style={{ width: '100%', marginBottom: 24, padding: '12px 14px', borderRadius: 12, border: `1px solid ${t.border}`, background: t.surface, color: t.text, fontSize: 15, fontFamily: 'Inter, sans-serif' }}>
+          style={{ width: '100%', marginBottom: 24, padding: '12px 14px', borderRadius: 12, border: `1px solid ${t.border}`, background: t.surface, color: t.text, fontSize: 15, fontFamily: 'var(--font-body)' }}>
           {CURRENCIES.map(c=><option key={c} value={c}>{c}</option>)}
         </select>
         <button onClick={()=>setStep(2)} style={{ width: '100%', padding: '13px', borderRadius: 12, border: 'none', background: t.accent, color: t.accentText, fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>Continuar</button>
@@ -3333,7 +3335,7 @@ function OnboardingScreen({ t, onComplete }) {
           <div key={o.id} style={{ marginBottom: 12 }}>
             <div style={{ fontSize: 11.5, color: t.textMuted, marginBottom: 5 }}>{o.name}</div>
             <MoneyInput value={balances[o.id] || ''} onChange={(v)=>setBalances(b=>({ ...b, [o.id]: v }))} placeholder="0"
-              style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surface, color: t.text, fontSize: 14, fontFamily: 'Inter, sans-serif', outline: 'none' }} />
+              style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surface, color: t.text, fontSize: 14, fontFamily: 'var(--font-body)', outline: 'none' }} />
           </div>
         ))}
       </div>
@@ -3464,18 +3466,19 @@ function App() {
 
   const closeModal = () => setModal({ type: null });
 
+  const fontBody = t.glow ? 'Optima, Candara, "Trebuchet MS", -apple-system, sans-serif' : 'Inter, -apple-system, sans-serif';
   const cssVars = {
     '--bg': t.bg, '--surface': t.surface, '--surfaceAlt': t.surfaceAlt, '--border': t.border,
-    '--accent': t.accent, '--text': t.text, '--textMuted': t.textMuted
+    '--accent': t.accent, '--text': t.text, '--textMuted': t.textMuted, '--font-body': fontBody
   };
 
   return (
-    <div style={{ ...cssVars, display: 'flex', justifyContent: 'center', width: '100%', minHeight: '100%', background: t.bg, fontFamily: 'Inter, -apple-system, sans-serif' }}>
+    <div style={{ ...cssVars, display: 'flex', justifyContent: 'center', width: '100%', minHeight: '100%', background: t.bg, fontFamily: 'var(--font-body)' }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap');
         * { box-sizing: border-box; }
         .fz-icon-btn { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        .fz-link-btn { background: none; border: none; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: 'Inter', sans-serif; }
+        .fz-link-btn { background: none; border: none; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: var(--font-body); }
         .fz-row-btn:active, .fz-seg-btn:active { opacity: 0.75; }
         select { -webkit-appearance: none; appearance: none; }
         input:focus, select:focus { border-color: ${t.accent} !important; }

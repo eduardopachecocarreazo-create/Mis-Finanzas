@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "build": "esbuild src/app.jsx --bundle --minify --loader:.js=jsx --outfile=bundle.js",
+    "build": "node scripts/build.js",
     "watch": "esbuild src/app.jsx --bundle --loader:.js=jsx --outfile=bundle.js --watch",
     "prepare": "node scripts/setup-hooks.js"
   },
