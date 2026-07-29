@@ -123,30 +123,34 @@ const DEFAULT_DATA = {
 
 const STORAGE_KEY = 'finanzas_data_v1';
 
+/* Todas las paletas comparten el mismo lenguaje visual (vidrio, insignias
+   circulares, resplandor): glow/pillBadges quedan fijos en true para que
+   cambiar de paleta o de modo claro/oscuro solo cambie el color, nunca el
+   diseño. */
 const THEMES = {
   gold: {
-    dark: { bg:'#12141A', surface:'#1E212B', surfaceAlt:'#262B38', border:'#3D4354', accent:'#C9A66B', accentSoft:'#E4C989', accentText:'#12141A', income:'#8FBFA0', expense:'#D98C7A', warn:'#D9A94A', text:'#F1EEE6', textMuted:'#9096A3', shadow:'rgba(0,0,0,0.35)' },
-    light: { bg:'#F6F3EC', surface:'#FFFFFF', surfaceAlt:'#F1EEE6', border:'#E3DED2', accent:'#A9812F', accentSoft:'#C9A66B', accentText:'#FFFFFF', income:'#4F8C68', expense:'#B85C4A', warn:'#B8862F', text:'#23241F', textMuted:'#6B6C63', shadow:'rgba(30,25,15,0.10)' }
+    dark: { bg:'#12141A', surface:'#1E212B', surfaceAlt:'#262B38', border:'#3D4354', accent:'#C9A66B', accentSoft:'#E4C989', accentText:'#12141A', income:'#8FBFA0', expense:'#D98C7A', warn:'#D9A94A', text:'#F1EEE6', textMuted:'#9096A3', shadow:'rgba(0,0,0,0.35)', glow:true, pillBadges:true },
+    light: { bg:'#F6F3EC', surface:'#FFFFFF', surfaceAlt:'#F1EEE6', border:'#E3DED2', accent:'#A9812F', accentSoft:'#C9A66B', accentText:'#FFFFFF', income:'#4F8C68', expense:'#B85C4A', warn:'#B8862F', text:'#23241F', textMuted:'#6B6C63', shadow:'rgba(30,25,15,0.10)', glow:true, pillBadges:true }
   },
   rose: {
-    dark: { bg:'#1A1216', surface:'#271C22', surfaceAlt:'#332530', border:'#4F3944', accent:'#E08FA6', accentSoft:'#F0B8C7', accentText:'#1A1216', income:'#8FBFA0', expense:'#D98C7A', warn:'#D9A94A', text:'#F5EDF0', textMuted:'#A8919B', shadow:'rgba(0,0,0,0.35)' },
-    light: { bg:'#FCF2F5', surface:'#FFFFFF', surfaceAlt:'#FBEEF2', border:'#F0DCE3', accent:'#C25F7F', accentSoft:'#E08FA6', accentText:'#FFFFFF', income:'#4F8C68', expense:'#B85C4A', warn:'#B8862F', text:'#2A1F23', textMuted:'#8A6E76', shadow:'rgba(60,20,35,0.10)' }
+    dark: { bg:'#1A1216', surface:'#271C22', surfaceAlt:'#332530', border:'#4F3944', accent:'#E08FA6', accentSoft:'#F0B8C7', accentText:'#1A1216', income:'#8FBFA0', expense:'#D98C7A', warn:'#D9A94A', text:'#F5EDF0', textMuted:'#A8919B', shadow:'rgba(0,0,0,0.35)', glow:true, pillBadges:true },
+    light: { bg:'#FCF2F5', surface:'#FFFFFF', surfaceAlt:'#FBEEF2', border:'#F0DCE3', accent:'#C25F7F', accentSoft:'#E08FA6', accentText:'#FFFFFF', income:'#4F8C68', expense:'#B85C4A', warn:'#B8862F', text:'#2A1F23', textMuted:'#8A6E76', shadow:'rgba(60,20,35,0.10)', glow:true, pillBadges:true }
   },
   steel: {
-    dark: { bg:'#11151C', surface:'#1D2530', surfaceAlt:'#262F3E', border:'#3F4E66', accent:'#6FA8D9', accentSoft:'#9CC6EA', accentText:'#11151C', income:'#7FC49A', expense:'#D9836F', warn:'#D9A94A', text:'#EAF0F6', textMuted:'#8D9AAC', shadow:'rgba(0,0,0,0.35)' },
-    light: { bg:'#F1F4F8', surface:'#FFFFFF', surfaceAlt:'#E9EEF4', border:'#DCE3EC', accent:'#3E6FA1', accentSoft:'#6FA8D9', accentText:'#FFFFFF', income:'#3F7D5C', expense:'#B0553F', warn:'#B8862F', text:'#1D2530', textMuted:'#647184', shadow:'rgba(20,35,60,0.10)' }
+    dark: { bg:'#11151C', surface:'#1D2530', surfaceAlt:'#262F3E', border:'#3F4E66', accent:'#6FA8D9', accentSoft:'#9CC6EA', accentText:'#11151C', income:'#7FC49A', expense:'#D9836F', warn:'#D9A94A', text:'#EAF0F6', textMuted:'#8D9AAC', shadow:'rgba(0,0,0,0.35)', glow:true, pillBadges:true },
+    light: { bg:'#F1F4F8', surface:'#FFFFFF', surfaceAlt:'#E9EEF4', border:'#DCE3EC', accent:'#3E6FA1', accentSoft:'#6FA8D9', accentText:'#FFFFFF', income:'#3F7D5C', expense:'#B0553F', warn:'#B8862F', text:'#1D2530', textMuted:'#647184', shadow:'rgba(20,35,60,0.10)', glow:true, pillBadges:true }
   },
   emerald: {
-    dark: { bg:'#0F1712', surface:'#1A251E', surfaceAlt:'#213024', border:'#39584A', accent:'#5FB88A', accentSoft:'#8FD4AE', accentText:'#0F1712', income:'#5FB88A', expense:'#D9836F', warn:'#D9A94A', text:'#EAF3ED', textMuted:'#8CA396', shadow:'rgba(0,0,0,0.35)' },
-    light: { bg:'#F0F6F2', surface:'#FFFFFF', surfaceAlt:'#E6F0EA', border:'#D8E6DC', accent:'#2E8558', accentSoft:'#5FB88A', accentText:'#FFFFFF', income:'#2E8558', expense:'#B0553F', warn:'#B8862F', text:'#16241C', textMuted:'#5E7568', shadow:'rgba(15,40,25,0.10)' }
+    dark: { bg:'#0F1712', surface:'#1A251E', surfaceAlt:'#213024', border:'#39584A', accent:'#5FB88A', accentSoft:'#8FD4AE', accentText:'#0F1712', income:'#5FB88A', expense:'#D9836F', warn:'#D9A94A', text:'#EAF3ED', textMuted:'#8CA396', shadow:'rgba(0,0,0,0.35)', glow:true, pillBadges:true },
+    light: { bg:'#F0F6F2', surface:'#FFFFFF', surfaceAlt:'#E6F0EA', border:'#D8E6DC', accent:'#2E8558', accentSoft:'#5FB88A', accentText:'#FFFFFF', income:'#2E8558', expense:'#B0553F', warn:'#B8862F', text:'#16241C', textMuted:'#5E7568', shadow:'rgba(15,40,25,0.10)', glow:true, pillBadges:true }
   },
   purple: {
-    dark: { bg:'#15121C', surface:'#1E1927', surfaceAlt:'#272032', border:'#332B40', accent:'#A98FD9', accentSoft:'#C7B4EA', accentText:'#15121C', income:'#8FBFA0', expense:'#D98C7A', warn:'#D9A94A', text:'#F0EDF5', textMuted:'#9C90AC', shadow:'rgba(0,0,0,0.35)' },
-    light: { bg:'#F5F2FA', surface:'#FFFFFF', surfaceAlt:'#EEE8F6', border:'#E1D9EE', accent:'#7A5FB8', accentSoft:'#A98FD9', accentText:'#FFFFFF', income:'#4F8C68', expense:'#B85C4A', warn:'#B8862F', text:'#211C2A', textMuted:'#75697F', shadow:'rgba(35,20,55,0.10)' }
+    dark: { bg:'#15121C', surface:'#1E1927', surfaceAlt:'#272032', border:'#332B40', accent:'#A98FD9', accentSoft:'#C7B4EA', accentText:'#15121C', income:'#8FBFA0', expense:'#D98C7A', warn:'#D9A94A', text:'#F0EDF5', textMuted:'#9C90AC', shadow:'rgba(0,0,0,0.35)', glow:true, pillBadges:true },
+    light: { bg:'#F5F2FA', surface:'#FFFFFF', surfaceAlt:'#EEE8F6', border:'#E1D9EE', accent:'#7A5FB8', accentSoft:'#A98FD9', accentText:'#FFFFFF', income:'#4F8C68', expense:'#B85C4A', warn:'#B8862F', text:'#211C2A', textMuted:'#75697F', shadow:'rgba(35,20,55,0.10)', glow:true, pillBadges:true }
   },
   nocturne: {
     dark: { bg:'#0B0B14', surface:'#14141F', surfaceAlt:'#1B1B29', border:'#2A2A3C', accent:'#C9A44C', accentSoft:'#E6C878', accentText:'#191408', income:'#87C1A2', expense:'#D68F7C', warn:'#D9A94A', text:'#F1EEE6', textMuted:'#8C8AA0', shadow:'rgba(0,0,0,0.45)', glow:true, pillBadges:true },
-    light: { bg:'#F7F5EF', surface:'#FFFFFF', surfaceAlt:'#F0ECE0', border:'#E5E1D6', accent:'#9C7A2E', accentSoft:'#C9A44C', accentText:'#FFFFFF', income:'#3F7D5C', expense:'#B0553F', warn:'#B8862F', text:'#1A1826', textMuted:'#6E6C80', shadow:'rgba(25,20,10,0.12)', glow:false, pillBadges:true }
+    light: { bg:'#F7F5EF', surface:'#FFFFFF', surfaceAlt:'#F0ECE0', border:'#E5E1D6', accent:'#9C7A2E', accentSoft:'#C9A44C', accentText:'#FFFFFF', income:'#3F7D5C', expense:'#B0553F', warn:'#B8862F', text:'#1A1826', textMuted:'#6E6C80', shadow:'rgba(25,20,10,0.12)', glow:true, pillBadges:true }
   }
 };
 
@@ -800,7 +804,7 @@ function InicioScreen({ data, setData, t, goHistorial, openSheet, onQuickAdd, on
           <div style={{ fontSize: 11, letterSpacing: '0.14em', color: t.textMuted, textTransform: 'uppercase', fontWeight: 600, textAlign: t.glow ? 'center' : undefined }}>{balanceLabel}</div>
           <div onClick={()=>setBalanceHidden(h=>!h)} title={balanceHidden ? 'Mostrar montos' : 'Ocultar montos'}
             style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none', justifyContent: t.glow ? 'center' : 'flex-start' }}>
-            <div style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 36, color: t.text, fontWeight: 600, marginTop: 6, fontVariantNumeric: 'tabular-nums', textShadow: t.glow ? `0 0 30px ${t.accent}80` : undefined }}>
+            <div style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 36, color: t.text, fontWeight: 600, marginTop: 6, fontVariantNumeric: 'tabular-nums', textShadow: t.glow ? `0 0 2px ${t.accent}CC, 0 0 10px ${t.accent}99, 0 0 26px ${t.accent}70` : undefined }}>
               {balanceHidden ? '••••••' : formatMoney(displayBalance, settings.currency)}
             </div>
             <Icon name={balanceHidden ? 'EyeOff' : 'Eye'} size={16} color={t.textMuted} style={{ marginTop: 6 }} />
@@ -895,14 +899,22 @@ function InicioScreen({ data, setData, t, goHistorial, openSheet, onQuickAdd, on
 
         {/* Pie chart */}
         {pieData.length > 0 && (
-          <div onClick={()=>onNavigate('reportes')} style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 16, padding: '18px 18px 8px', marginTop: 16, cursor: 'pointer' }}>
+          <div onClick={()=>onNavigate('reportes')} style={{ background: t.glow ? t.surface + 'CC' : t.surface, border: `1px solid ${t.border}`, borderRadius: t.glow ? 20 : 16, padding: '18px 18px 8px', marginTop: 16, cursor: 'pointer', backdropFilter: t.glow ? 'blur(10px)' : undefined, WebkitBackdropFilter: t.glow ? 'blur(10px)' : undefined }}>
             <div style={{ fontSize: 13.5, fontWeight: 600, color: t.text, marginBottom: 4 }}>Gastos por categoría</div>
             <div style={{ display: 'flex', alignItems: 'center' }}>
-              <div style={{ width: 120, height: 120, flexShrink: 0, filter: t.glow ? `drop-shadow(0 0 8px ${t.accent}30)` : undefined }}>
+              <div style={{ width: 120, height: 120, flexShrink: 0, filter: t.glow ? `drop-shadow(0 0 10px ${t.accent}35)` : undefined }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={pieData} dataKey="value" nameKey="name" innerRadius={34} outerRadius={54} paddingAngle={2} stroke="none">
-                      {pieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                    <defs>
+                      {pieData.map((entry, i) => (
+                        <radialGradient key={i} id={`pieGrad-${i}`} cx="35%" cy="35%" r="75%">
+                          <stop offset="0%" stopColor={entry.color} stopOpacity={1} />
+                          <stop offset="100%" stopColor={entry.color} stopOpacity={0.72} />
+                        </radialGradient>
+                      ))}
+                    </defs>
+                    <Pie data={pieData} dataKey="value" nameKey="name" innerRadius={34} outerRadius={54} paddingAngle={3} stroke={t.glow ? t.bg : 'none'} strokeWidth={t.glow ? 2 : 0}>
+                      {pieData.map((entry, i) => <Cell key={i} fill={t.glow ? `url(#pieGrad-${i})` : entry.color} />)}
                     </Pie>
                     <Tooltip formatter={(v)=>formatMoney(v, settings.currency)} contentStyle={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 8, fontSize: 12 }} labelStyle={{ color: t.text }} itemStyle={{ color: t.text }} />
                   </PieChart>
