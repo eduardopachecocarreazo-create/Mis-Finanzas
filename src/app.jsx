@@ -100,7 +100,7 @@ const DEFAULT_DATA = {
   categories: DEFAULT_CATEGORIES,
   budgets: {},
   settings: {
-    theme: 'dark', palette: 'gold', currency: 'COP', pin: null, biometricCredentialId: null, lastBackupDate: null, onboardingCompleted: false, userName: '',
+    theme: 'dark', palette: 'nocturne', currency: 'COP', pin: null, biometricCredentialId: null, lastBackupDate: null, onboardingCompleted: false, userName: '',
     notifications: { dailyReminder: false, dailyReminderTime: '21:00', budgetAlerts: true, upcomingPayments: true, lastCheckedDate: null }
   },
   accounts: DEFAULT_ACCOUNTS,
@@ -133,6 +133,10 @@ const THEMES = {
   purple: {
     dark: { bg:'#15121C', surface:'#1E1927', surfaceAlt:'#272032', border:'#332B40', accent:'#A98FD9', accentSoft:'#C7B4EA', accentText:'#15121C', income:'#8FBFA0', expense:'#D98C7A', warn:'#D9A94A', text:'#F0EDF5', textMuted:'#9C90AC', shadow:'rgba(0,0,0,0.35)' },
     light: { bg:'#F5F2FA', surface:'#FFFFFF', surfaceAlt:'#EEE8F6', border:'#E1D9EE', accent:'#7A5FB8', accentSoft:'#A98FD9', accentText:'#FFFFFF', income:'#4F8C68', expense:'#B85C4A', warn:'#B8862F', text:'#211C2A', textMuted:'#75697F', shadow:'rgba(35,20,55,0.10)' }
+  },
+  nocturne: {
+    dark: { bg:'#0B0B14', surface:'#14141F', surfaceAlt:'#1B1B29', border:'#2A2A3C', accent:'#C9A44C', accentSoft:'#E6C878', accentText:'#191408', income:'#87C1A2', expense:'#D68F7C', warn:'#D9A94A', text:'#F1EEE6', textMuted:'#8C8AA0', shadow:'rgba(0,0,0,0.45)', glow:true, pillBadges:true },
+    light: { bg:'#F7F5EF', surface:'#FFFFFF', surfaceAlt:'#F0ECE0', border:'#E5E1D6', accent:'#9C7A2E', accentSoft:'#C9A44C', accentText:'#FFFFFF', income:'#3F7D5C', expense:'#B0553F', warn:'#B8862F', text:'#1A1826', textMuted:'#6E6C80', shadow:'rgba(25,20,10,0.12)', glow:false, pillBadges:true }
   }
 };
 
@@ -142,6 +146,7 @@ const PALETTES = [
   { id: 'steel', label: 'Azul acero', swatch: '#6FA8D9' },
   { id: 'emerald', label: 'Esmeralda', swatch: '#5FB88A' },
   { id: 'purple', label: 'Púrpura', swatch: '#A98FD9' },
+  { id: 'nocturne', label: 'Nocturne', swatch: '#C9A44C' },
 ];
 
 const MONTHS_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
@@ -601,7 +606,7 @@ function SegmentedControl({ options, value, onChange, t }) {
 function CategoryBadge({ cat, size = 34, t }) {
   return (
     <div style={{
-      width: size, height: size, borderRadius: size * 0.32, background: cat ? cat.color + '26' : t.surfaceAlt,
+      width: size, height: size, borderRadius: t.pillBadges ? size / 2 : size * 0.32, background: cat ? cat.color + '26' : t.surfaceAlt,
       display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
     }}>
       <Icon name={cat ? cat.icon : 'MoreHorizontal'} size={size * 0.5} color={cat ? cat.color : t.textMuted} />
@@ -765,8 +770,8 @@ function InicioScreen({ data, setData, t, goHistorial, openSheet, onQuickAdd, on
 
         {/* Passbook balance card */}
         <div style={{
-          background: t.surface, border: `1px solid ${t.border}`, borderRadius: 16, padding: '22px 20px',
-          position: 'relative', boxShadow: `0 10px 30px ${t.shadow}`
+          background: t.surface, border: `1px solid ${t.border}`, borderRadius: t.glow ? 22 : 16, padding: '22px 20px',
+          position: 'relative', boxShadow: `0 10px 30px ${t.shadow}`, backdropFilter: t.glow ? 'blur(6px)' : undefined
         }}>
           <div style={{ height: 2, background: `linear-gradient(90deg, transparent, ${t.accent}, transparent)`, marginBottom: 16, opacity: 0.6 }} />
 
@@ -784,7 +789,7 @@ function InicioScreen({ data, setData, t, goHistorial, openSheet, onQuickAdd, on
           <div style={{ fontSize: 11, letterSpacing: '0.14em', color: t.textMuted, textTransform: 'uppercase', fontWeight: 600 }}>{balanceLabel}</div>
           <div onClick={()=>setBalanceHidden(h=>!h)} title={balanceHidden ? 'Mostrar montos' : 'Ocultar montos'}
             style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none' }}>
-            <div style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 36, color: t.text, fontWeight: 600, marginTop: 6, fontVariantNumeric: 'tabular-nums' }}>
+            <div style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 36, color: t.text, fontWeight: 600, marginTop: 6, fontVariantNumeric: 'tabular-nums', textShadow: t.glow ? `0 0 26px ${t.accent}66` : undefined }}>
               {balanceHidden ? '••••••' : formatMoney(displayBalance, settings.currency)}
             </div>
             <Icon name={balanceHidden ? 'EyeOff' : 'Eye'} size={16} color={t.textMuted} style={{ marginTop: 6 }} />
