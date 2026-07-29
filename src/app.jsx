@@ -1807,7 +1807,7 @@ function AjustesScreen({ data, setData, t, onOpenModal }) {
         <SectionLabel t={t}>Apariencia</SectionLabel>
         <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 14, padding: 14, marginBottom: 10 }}>
           <SegmentedControl t={t} value={settings.theme} onChange={setTheme}
-            options={[{value:'dark',label:'🌙 Oscuro'},{value:'light',label:'☀️ Claro'}]} />
+            options={[{value:'dark',label:'🌙 Oscuro'},{value:'light',label:'☀️ Claro'},{value:'system',label:'⚙️ Sistema'}]} />
         </div>
         <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 14, padding: 14, marginBottom: 18 }}>
           <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Paleta de color</div>
@@ -3359,6 +3359,20 @@ function OnboardingScreen({ t, onComplete }) {
 }
 
 /* ---------------------------------- APP PRINCIPAL ---------------------------------- */
+function useSystemTheme() {
+  const [systemTheme, setSystemTheme] = useState(() => (
+    typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  ));
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const update = (e) => setSystemTheme(e.matches ? 'dark' : 'light');
+    mq.addEventListener ? mq.addEventListener('change', update) : mq.addListener(update);
+    return () => { mq.removeEventListener ? mq.removeEventListener('change', update) : mq.removeListener(update); };
+  }, []);
+  return systemTheme;
+}
+
 function App() {
   const [data, setData] = useState(DEFAULT_DATA);
   const [loaded, setLoaded] = useState(false);
@@ -3460,7 +3474,9 @@ function App() {
     checkNotifications(data, setData);
   }, [loaded]);
 
-  const t = (THEMES[data.settings.palette] || THEMES.gold)[data.settings.theme] || THEMES.gold.dark;
+  const systemTheme = useSystemTheme();
+  const resolvedTheme = data.settings.theme === 'system' ? systemTheme : data.settings.theme;
+  const t = (THEMES[data.settings.palette] || THEMES.gold)[resolvedTheme] || THEMES.gold.dark;
 
   const saveTransaction = (tx) => {
     setData(d => {
@@ -3502,7 +3518,7 @@ function App() {
         @keyframes fz-shake-kf { 10%,90% { transform: translateX(-2px); } 20%,80% { transform: translateX(4px); } 30%,50%,70% { transform: translateX(-8px); } 40%,60% { transform: translateX(8px); } }
         .fz-shake { animation: fz-shake-kf .4s; }
         @media (prefers-reduced-motion: reduce) { .fz-sheet, .fz-sheet-backdrop, .fz-shake { animation: none !important; } }
-        input[type="date"]::-webkit-calendar-picker-indicator { filter: ${data.settings.theme==='dark' ? 'invert(1)' : 'none'}; opacity: 0.6; }
+        input[type="date"]::-webkit-calendar-picker-indicator { filter: ${resolvedTheme==='dark' ? 'invert(1)' : 'none'}; opacity: 0.6; }
       `}</style>
 
       <div style={{ width: '100%', maxWidth: 430, minHeight: '100vh', background: t.glow ? `radial-gradient(120% 46% at 50% 0%, ${t.surfaceAlt} 0%, ${t.bg} 62%)` : t.bg, position: 'relative', overflow: 'hidden', boxShadow: `0 0 60px ${t.shadow}` }}>
