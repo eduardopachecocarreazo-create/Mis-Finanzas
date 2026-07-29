@@ -634,7 +634,7 @@ function TopBar({ title, subtitle, t, onSettings, centered }) {
 /* ---------------------------------- INICIO ---------------------------------- */
 function AccountMiniCard({ account, balance, t, settings }) {
   return (
-    <div style={{ flexShrink: 0, minWidth: 132, background: t.surface, border: `1px solid ${t.border}`, borderRadius: 14, padding: '12px 14px' }}>
+    <div style={{ flexShrink: 0, minWidth: 132, background: t.glow ? t.surface + 'CC' : t.surface, border: `1px solid ${t.border}`, borderRadius: t.glow ? 18 : 14, padding: '12px 14px', backdropFilter: t.glow ? 'blur(10px)' : undefined, WebkitBackdropFilter: t.glow ? 'blur(10px)' : undefined }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
         <CategoryBadge cat={{ icon: account.icon, color: account.color }} t={t} size={26} />
         <div style={{ fontSize: 11.5, color: t.textMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{account.name}</div>
@@ -770,31 +770,32 @@ function InicioScreen({ data, setData, t, goHistorial, openSheet, onQuickAdd, on
 
         {/* Passbook balance card */}
         <div style={{
-          background: t.surface, border: `1px solid ${t.border}`, borderRadius: t.glow ? 22 : 16, padding: '22px 20px',
-          position: 'relative', boxShadow: `0 10px 30px ${t.shadow}`, backdropFilter: t.glow ? 'blur(6px)' : undefined
+          background: t.glow ? t.surface + 'CC' : t.surface, border: `1px solid ${t.border}`, borderRadius: t.glow ? 22 : 16, padding: '22px 20px',
+          position: 'relative', boxShadow: t.glow ? `0 10px 30px ${t.shadow}, inset 0 1px 0 rgba(255,255,255,0.06)` : `0 10px 30px ${t.shadow}`,
+          backdropFilter: t.glow ? 'blur(10px)' : undefined, WebkitBackdropFilter: t.glow ? 'blur(10px)' : undefined
         }}>
           <div style={{ height: 2, background: `linear-gradient(90deg, transparent, ${t.accent}, transparent)`, marginBottom: 16, opacity: 0.6 }} />
 
-          <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 12, justifyContent: t.glow ? 'center' : undefined }}>
             {BALANCE_VIEWS.map(v=>(
               <button key={v.value} onClick={()=>setBalanceView(v.value)}
                 style={{ padding: '4px 10px', borderRadius: 12, cursor: 'pointer', fontSize: 11, fontWeight: 600,
                   border: `1px solid ${balanceView===v.value ? t.accent : t.border}`, background: balanceView===v.value ? t.accent+'22' : 'transparent',
-                  color: balanceView===v.value ? t.accent : t.textMuted }}>
+                  color: balanceView===v.value ? t.accent : t.textMuted, flex: t.glow ? '0 0 auto' : undefined }}>
                 {v.label}
               </button>
             ))}
           </div>
 
-          <div style={{ fontSize: 11, letterSpacing: '0.14em', color: t.textMuted, textTransform: 'uppercase', fontWeight: 600 }}>{balanceLabel}</div>
+          <div style={{ fontSize: 11, letterSpacing: '0.14em', color: t.textMuted, textTransform: 'uppercase', fontWeight: 600, textAlign: t.glow ? 'center' : undefined }}>{balanceLabel}</div>
           <div onClick={()=>setBalanceHidden(h=>!h)} title={balanceHidden ? 'Mostrar montos' : 'Ocultar montos'}
-            style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none' }}>
-            <div style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 36, color: t.text, fontWeight: 600, marginTop: 6, fontVariantNumeric: 'tabular-nums', textShadow: t.glow ? `0 0 26px ${t.accent}66` : undefined }}>
+            style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none', justifyContent: t.glow ? 'center' : 'flex-start' }}>
+            <div style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 36, color: t.text, fontWeight: 600, marginTop: 6, fontVariantNumeric: 'tabular-nums', textShadow: t.glow ? `0 0 30px ${t.accent}80` : undefined }}>
               {balanceHidden ? '••••••' : formatMoney(displayBalance, settings.currency)}
             </div>
             <Icon name={balanceHidden ? 'EyeOff' : 'Eye'} size={16} color={t.textMuted} style={{ marginTop: 6 }} />
           </div>
-          <div style={{ fontSize: 12.5, color: t.textMuted, marginTop: 6 }}>{mood}</div>
+          <div style={{ fontSize: 12.5, color: t.textMuted, marginTop: 6, textAlign: t.glow ? 'center' : undefined }}>{mood}</div>
 
           <div style={{ display: 'flex', alignItems: 'center', marginTop: 18, gap: 14 }}>
             <div style={{ flex: 1 }}>
@@ -862,7 +863,7 @@ function InicioScreen({ data, setData, t, goHistorial, openSheet, onQuickAdd, on
         {upcoming.length > 0 && (
           <div style={{ marginTop: 16 }}>
             <div style={{ fontSize: 13.5, fontWeight: 600, color: t.text, marginBottom: 8 }}>Próximos pagos</div>
-            <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 16, overflow: 'hidden' }}>
+            <div style={{ background: t.glow ? t.surface + 'CC' : t.surface, border: `1px solid ${t.border}`, borderRadius: t.glow ? 20 : 16, overflow: 'hidden', backdropFilter: t.glow ? 'blur(10px)' : undefined, WebkitBackdropFilter: t.glow ? 'blur(10px)' : undefined }}>
               {upcoming.map((rec,i)=>{
                 const cat = categories.find(c=>c.id===rec.category);
                 return (
@@ -911,7 +912,7 @@ function InicioScreen({ data, setData, t, goHistorial, openSheet, onQuickAdd, on
         )}
 
         {/* Trend chart */}
-        <div onClick={()=>onNavigate('reportes')} style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 16, padding: '18px 12px 8px', marginTop: 16, cursor: 'pointer' }}>
+        <div onClick={()=>onNavigate('reportes')} style={{ background: t.glow ? t.surface + 'CC' : t.surface, border: `1px solid ${t.border}`, borderRadius: t.glow ? 20 : 16, padding: '18px 12px 8px', marginTop: 16, cursor: 'pointer', backdropFilter: t.glow ? 'blur(10px)' : undefined, WebkitBackdropFilter: t.glow ? 'blur(10px)' : undefined }}>
           <div style={{ fontSize: 13.5, fontWeight: 600, color: t.text, marginBottom: 4, paddingLeft: 6 }}>Tendencia (6 meses)</div>
           <div style={{ width: '100%', height: 140 }}>
             <ResponsiveContainer width="100%" height="100%">
@@ -936,7 +937,7 @@ function InicioScreen({ data, setData, t, goHistorial, openSheet, onQuickAdd, on
           {recent.length === 0 ? (
             <EmptyState t={t} text="Aún no tienes movimientos. Toca + para registrar el primero." onAction={openSheet} />
           ) : (
-            <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 16, overflow: 'hidden' }}>
+            <div style={{ background: t.glow ? t.surface + 'CC' : t.surface, border: `1px solid ${t.border}`, borderRadius: t.glow ? 20 : 16, overflow: 'hidden', backdropFilter: t.glow ? 'blur(10px)' : undefined, WebkitBackdropFilter: t.glow ? 'blur(10px)' : undefined }}>
               {recent.map((tx,i)=>{
                 const cat = categories.find(c=>c.id===tx.category);
                 return (
@@ -965,7 +966,7 @@ function InicioScreen({ data, setData, t, goHistorial, openSheet, onQuickAdd, on
 
 function EmptyState({ t, text, onAction, actionLabel = 'Agregar movimiento' }) {
   return (
-    <div style={{ background: t.surface, border: `1px dashed ${t.border}`, borderRadius: 16, padding: '28px 20px', textAlign: 'center' }}>
+    <div style={{ background: t.glow ? t.surface + 'CC' : t.surface, border: `1px dashed ${t.border}`, borderRadius: t.glow ? 20 : 16, padding: '28px 20px', textAlign: 'center', backdropFilter: t.glow ? 'blur(10px)' : undefined, WebkitBackdropFilter: t.glow ? 'blur(10px)' : undefined }}>
       <div style={{ fontSize: 13, color: t.textMuted, marginBottom: onAction ? 14 : 0 }}>{text}</div>
       {onAction && (
         <button onClick={onAction} style={{ background: t.accent, color: t.accentText, border: 'none', borderRadius: 10, padding: '9px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
@@ -1147,7 +1148,7 @@ function HistorialScreen({ data, t, onEdit }) {
             {groupByDate && (
               <div style={{ fontSize: 11.5, color: t.textMuted, textTransform: 'capitalize', marginBottom: 6, fontWeight: 600, letterSpacing: '0.03em' }}>{formatDayHeader(dateKey)}</div>
             )}
-            <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 16, overflow: 'hidden' }}>
+            <div style={{ background: t.glow ? t.surface + 'CC' : t.surface, border: `1px solid ${t.border}`, borderRadius: t.glow ? 20 : 16, overflow: 'hidden', backdropFilter: t.glow ? 'blur(10px)' : undefined, WebkitBackdropFilter: t.glow ? 'blur(10px)' : undefined }}>
               {groups[dateKey].map((tx,i)=>renderRow(tx, i, i===0))}
             </div>
           </div>
@@ -1606,7 +1607,7 @@ function ReportesScreen({ data, t }) {
         {catComparison.length>0 && (
           <div style={{ marginBottom: 16 }}>
             <div style={{ fontSize: 13.5, fontWeight: 600, color: t.text, marginBottom: 8 }}>Comparativo vs período anterior</div>
-            <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 16, overflow: 'hidden' }}>
+            <div style={{ background: t.glow ? t.surface + 'CC' : t.surface, border: `1px solid ${t.border}`, borderRadius: t.glow ? 20 : 16, overflow: 'hidden', backdropFilter: t.glow ? 'blur(10px)' : undefined, WebkitBackdropFilter: t.glow ? 'blur(10px)' : undefined }}>
               {catComparison.map((c,i)=>(
                 <div key={c.catId} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderTop: i===0?'none':`1px solid ${t.border}` }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
@@ -1629,7 +1630,7 @@ function ReportesScreen({ data, t }) {
         {topGastos.length>0 && (
           <div style={{ marginBottom: 16 }}>
             <div style={{ fontSize: 13.5, fontWeight: 600, color: t.text, marginBottom: 8 }}>Mayores gastos del período</div>
-            <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 16, overflow: 'hidden' }}>
+            <div style={{ background: t.glow ? t.surface + 'CC' : t.surface, border: `1px solid ${t.border}`, borderRadius: t.glow ? 20 : 16, overflow: 'hidden', backdropFilter: t.glow ? 'blur(10px)' : undefined, WebkitBackdropFilter: t.glow ? 'blur(10px)' : undefined }}>
               {topGastos.map((tx,i)=>{
                 const cat = categories.find(c=>c.id===tx.category);
                 return (
@@ -3456,7 +3457,7 @@ function App() {
         input[type="date"]::-webkit-calendar-picker-indicator { filter: ${data.settings.theme==='dark' ? 'invert(1)' : 'none'}; opacity: 0.6; }
       `}</style>
 
-      <div style={{ width: '100%', maxWidth: 430, minHeight: '100vh', background: t.bg, position: 'relative', overflow: 'hidden', boxShadow: `0 0 60px ${t.shadow}` }}>
+      <div style={{ width: '100%', maxWidth: 430, minHeight: '100vh', background: t.glow ? `radial-gradient(120% 46% at 50% 0%, ${t.surfaceAlt} 0%, ${t.bg} 62%)` : t.bg, position: 'relative', overflow: 'hidden', boxShadow: `0 0 60px ${t.shadow}` }}>
 
         {!loaded ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: t.textMuted, fontSize: 13 }}>Cargando tus finanzas…</div>
