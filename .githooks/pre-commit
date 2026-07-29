@@ -1,0 +1,11 @@
+#!/bin/sh
+# Recompila bundle.js antes de cada commit para que nunca quede desactualizado.
+if git diff --cached --name-only | grep -q '^src/'; then
+  echo "Recompilando bundle.js (cambios en src/)..."
+  npm run build
+  if [ $? -ne 0 ]; then
+    echo "El build falló. Commit cancelado."
+    exit 1
+  fi
+  git add bundle.js
+fi

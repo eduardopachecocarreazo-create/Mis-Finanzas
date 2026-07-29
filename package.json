@@ -1,0 +1,20 @@
+{
+  "name": "mis-finanzas",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "esbuild src/app.jsx --bundle --minify --loader:.js=jsx --outfile=bundle.js",
+    "watch": "esbuild src/app.jsx --bundle --loader:.js=jsx --outfile=bundle.js --watch",
+    "prepare": "node scripts/setup-hooks.js"
+  },
+  "dependencies": {
+    "lucide-react": "^0.383.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "recharts": "^2.12.7"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0"
+  }
+}
