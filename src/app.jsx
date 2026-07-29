@@ -888,7 +888,7 @@ function InicioScreen({ data, setData, t, goHistorial, openSheet, onQuickAdd, on
                     <Pie data={pieData} dataKey="value" nameKey="name" innerRadius={34} outerRadius={54} paddingAngle={2} stroke="none">
                       {pieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                     </Pie>
-                    <Tooltip formatter={(v)=>formatMoney(v, settings.currency)} contentStyle={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 8, fontSize: 12 }} />
+                    <Tooltip formatter={(v)=>formatMoney(v, settings.currency)} contentStyle={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 8, fontSize: 12 }} labelStyle={{ color: t.text }} itemStyle={{ color: t.text }} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -914,7 +914,7 @@ function InicioScreen({ data, setData, t, goHistorial, openSheet, onQuickAdd, on
                 <CartesianGrid strokeDasharray="3 3" stroke={t.border} vertical={false} />
                 <XAxis dataKey="label" tick={{ fontSize: 11, fill: t.textMuted }} axisLine={{ stroke: t.border }} tickLine={false} />
                 <YAxis tick={{ fontSize: 10, fill: t.textMuted }} axisLine={false} tickLine={false} width={38} tickFormatter={formatCompactNumber} />
-                <Tooltip formatter={(v)=>formatMoney(v, settings.currency)} contentStyle={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 8, fontSize: 12 }} />
+                <Tooltip formatter={(v)=>formatMoney(v, settings.currency)} contentStyle={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 8, fontSize: 12 }} labelStyle={{ color: t.text }} itemStyle={{ color: t.text }} />
                 <Line type="monotone" dataKey="Ingresos" stroke={t.income} strokeWidth={2.2} dot={false} />
                 <Line type="monotone" dataKey="Gastos" stroke={t.expense} strokeWidth={2.2} dot={false} />
               </LineChart>
@@ -1520,7 +1520,7 @@ function ReportesScreen({ data, t }) {
                 <BarChart data={barData} layout="vertical" margin={{ top: 0, right: 20, left: 0, bottom: 0 }}>
                   <XAxis type="number" hide />
                   <YAxis type="category" dataKey="name" width={92} tick={{ fontSize: 11, fill: t.textMuted }} axisLine={false} tickLine={false} tickFormatter={(v)=>truncateLabel(v, 13)} />
-                  <Tooltip formatter={(v)=>formatMoney(v, settings.currency)} contentStyle={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 8, fontSize: 12 }} cursor={{fill: t.surfaceAlt}} />
+                  <Tooltip formatter={(v)=>formatMoney(v, settings.currency)} contentStyle={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 8, fontSize: 12 }} labelStyle={{ color: t.text }} itemStyle={{ color: t.text }} cursor={{fill: t.surfaceAlt}} />
                   <Bar dataKey="value" radius={[0,6,6,0]}>
                     {barData.map((entry,i)=><Cell key={i} fill={entry.color} />)}
                   </Bar>
@@ -1538,7 +1538,7 @@ function ReportesScreen({ data, t }) {
                 <BarChart data={incomeBarData} layout="vertical" margin={{ top: 0, right: 20, left: 0, bottom: 0 }}>
                   <XAxis type="number" hide />
                   <YAxis type="category" dataKey="name" width={92} tick={{ fontSize: 11, fill: t.textMuted }} axisLine={false} tickLine={false} tickFormatter={(v)=>truncateLabel(v, 13)} />
-                  <Tooltip formatter={(v)=>formatMoney(v, settings.currency)} contentStyle={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 8, fontSize: 12 }} cursor={{fill: t.surfaceAlt}} />
+                  <Tooltip formatter={(v)=>formatMoney(v, settings.currency)} contentStyle={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 8, fontSize: 12 }} labelStyle={{ color: t.text }} itemStyle={{ color: t.text }} cursor={{fill: t.surfaceAlt}} />
                   <Bar dataKey="value" radius={[0,6,6,0]}>
                     {incomeBarData.map((entry,i)=><Cell key={i} fill={entry.color} />)}
                   </Bar>
@@ -1556,7 +1556,7 @@ function ReportesScreen({ data, t }) {
                 <BarChart data={accountBarData} layout="vertical" margin={{ top: 0, right: 20, left: 0, bottom: 0 }}>
                   <XAxis type="number" hide />
                   <YAxis type="category" dataKey="name" width={92} tick={{ fontSize: 11, fill: t.textMuted }} axisLine={false} tickLine={false} tickFormatter={(v)=>truncateLabel(v, 13)} />
-                  <Tooltip formatter={(v)=>formatMoney(v, settings.currency)} contentStyle={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 8, fontSize: 12 }} cursor={{fill: t.surfaceAlt}} />
+                  <Tooltip formatter={(v)=>formatMoney(v, settings.currency)} contentStyle={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 8, fontSize: 12 }} labelStyle={{ color: t.text }} itemStyle={{ color: t.text }} cursor={{fill: t.surfaceAlt}} />
                   <Bar dataKey="value" radius={[0,6,6,0]}>
                     {accountBarData.map((entry,i)=><Cell key={i} fill={entry.color} />)}
                   </Bar>
@@ -1574,7 +1574,7 @@ function ReportesScreen({ data, t }) {
                 <CartesianGrid strokeDasharray="3 3" stroke={t.border} vertical={false} />
                 <XAxis dataKey="label" tick={{ fontSize: 11, fill: t.textMuted }} axisLine={{ stroke: t.border }} tickLine={false} />
                 <YAxis tick={{ fontSize: 10, fill: t.textMuted }} axisLine={false} tickLine={false} width={38} tickFormatter={formatCompactNumber} />
-                <Tooltip formatter={(v)=>formatMoney(v, settings.currency)} contentStyle={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 8, fontSize: 12 }} />
+                <Tooltip formatter={(v)=>formatMoney(v, settings.currency)} contentStyle={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 8, fontSize: 12 }} labelStyle={{ color: t.text }} itemStyle={{ color: t.text }} />
                 <Line type="monotone" dataKey="Ingresos" stroke={t.income} strokeWidth={2.2} dot={false} />
                 <Line type="monotone" dataKey="Gastos" stroke={t.expense} strokeWidth={2.2} dot={false} />
                 <Line type="monotone" dataKey="Ahorro" stroke={t.accent} strokeWidth={2.2} dot={false} />
@@ -1591,7 +1591,7 @@ function ReportesScreen({ data, t }) {
                 <CartesianGrid strokeDasharray="3 3" stroke={t.border} vertical={false} />
                 <XAxis dataKey="label" tick={{ fontSize: 11, fill: t.textMuted }} axisLine={{ stroke: t.border }} tickLine={false} />
                 <YAxis tick={{ fontSize: 10, fill: t.textMuted }} axisLine={false} tickLine={false} width={38} tickFormatter={formatCompactNumber} />
-                <Tooltip formatter={(v)=>formatMoney(v, settings.currency)} contentStyle={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 8, fontSize: 12 }} />
+                <Tooltip formatter={(v)=>formatMoney(v, settings.currency)} contentStyle={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 8, fontSize: 12 }} labelStyle={{ color: t.text }} itemStyle={{ color: t.text }} />
                 <Line type="monotone" dataKey="Patrimonio" stroke={t.accent} strokeWidth={2.2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
