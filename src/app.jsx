@@ -3201,7 +3201,7 @@ function LockScreen({ t, actualPin, biometricCredentialId, onUnlock }) {
   useEffect(() => { tryBiometric(); }, []);
 
   return (
-    <div style={{ position: 'absolute', inset: 0, background: t.bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
+    <div style={{ position: 'fixed', inset: 0, maxWidth: 430, margin: '0 auto', background: t.bg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}>
       <div style={{ width: 52, height: 52, borderRadius: 16, background: t.surfaceAlt, border: `1px solid ${t.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
         <Icon name="Lock" size={22} color={t.accent} />
       </div>
