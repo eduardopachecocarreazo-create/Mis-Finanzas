@@ -2,8 +2,17 @@
 import ReactDOM from 'react-dom/client';
 import {
   PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis,
-  Tooltip, LineChart, Line, CartesianGrid
+  Tooltip, LineChart, Line, AreaChart, Area, CartesianGrid
 } from 'recharts';
+
+/* ---------------------------------- GRAFICOS PREMIUM ---------------------------------- */
+function lastPointDot(color, length) {
+  return (props) => (
+    props.index === length - 1
+      ? <circle key={`dot-${props.index}`} cx={props.cx} cy={props.cy} r={3.5} fill={color} stroke="none" />
+      : null
+  );
+}
 import {
   Home, Clock, Target, PieChart as PieIcon, Settings, Plus, X, Check, Lock,
   Search, TrendingUp, TrendingDown, Wallet, CreditCard, Banknote,
@@ -888,7 +897,7 @@ function InicioScreen({ data, setData, t, goHistorial, openSheet, onQuickAdd, on
           <div onClick={()=>onNavigate('reportes')} style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 16, padding: '18px 18px 8px', marginTop: 16, cursor: 'pointer' }}>
             <div style={{ fontSize: 13.5, fontWeight: 600, color: t.text, marginBottom: 4 }}>Gastos por categoría</div>
             <div style={{ display: 'flex', alignItems: 'center' }}>
-              <div style={{ width: 120, height: 120, flexShrink: 0 }}>
+              <div style={{ width: 120, height: 120, flexShrink: 0, filter: t.glow ? `drop-shadow(0 0 8px ${t.accent}30)` : undefined }}>
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie data={pieData} dataKey="value" nameKey="name" innerRadius={34} outerRadius={54} paddingAngle={2} stroke="none">
@@ -914,16 +923,24 @@ function InicioScreen({ data, setData, t, goHistorial, openSheet, onQuickAdd, on
         {/* Trend chart */}
         <div onClick={()=>onNavigate('reportes')} style={{ background: t.glow ? t.surface + 'CC' : t.surface, border: `1px solid ${t.border}`, borderRadius: t.glow ? 20 : 16, padding: '18px 12px 8px', marginTop: 16, cursor: 'pointer', backdropFilter: t.glow ? 'blur(10px)' : undefined, WebkitBackdropFilter: t.glow ? 'blur(10px)' : undefined }}>
           <div style={{ fontSize: 13.5, fontWeight: 600, color: t.text, marginBottom: 4, paddingLeft: 6 }}>Tendencia (6 meses)</div>
-          <div style={{ width: '100%', height: 140 }}>
+          <div style={{ width: '100%', height: 140, filter: t.glow ? `drop-shadow(0 0 10px ${t.accent}40)` : undefined }}>
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={trend} margin={{ top: 8, right: 10, left: -4, bottom: 0 }}>
+              <AreaChart data={trend} margin={{ top: 8, right: 10, left: -4, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="gradIncomeHome" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={t.income} stopOpacity={0.32}/><stop offset="100%" stopColor={t.income} stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="gradExpenseHome" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={t.expense} stopOpacity={0.32}/><stop offset="100%" stopColor={t.expense} stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke={t.border} vertical={false} />
                 <XAxis dataKey="label" tick={{ fontSize: 11, fill: t.textMuted }} axisLine={{ stroke: t.border }} tickLine={false} />
                 <YAxis tick={{ fontSize: 10, fill: t.textMuted }} axisLine={false} tickLine={false} width={38} tickFormatter={formatCompactNumber} />
                 <Tooltip formatter={(v)=>formatMoney(v, settings.currency)} contentStyle={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 8, fontSize: 12 }} labelStyle={{ color: t.text }} itemStyle={{ color: t.text }} />
-                <Line type="monotone" dataKey="Ingresos" stroke={t.income} strokeWidth={2.2} dot={false} />
-                <Line type="monotone" dataKey="Gastos" stroke={t.expense} strokeWidth={2.2} dot={false} />
-              </LineChart>
+                <Area type="monotone" dataKey="Ingresos" stroke={t.income} strokeWidth={2.2} fill={t.glow ? 'url(#gradIncomeHome)' : 'transparent'} dot={lastPointDot(t.income, trend.length)} activeDot={{ r: 4 }} />
+                <Area type="monotone" dataKey="Gastos" stroke={t.expense} strokeWidth={2.2} fill={t.glow ? 'url(#gradExpenseHome)' : 'transparent'} dot={lastPointDot(t.expense, trend.length)} activeDot={{ r: 4 }} />
+              </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
@@ -1574,32 +1591,48 @@ function ReportesScreen({ data, t }) {
 
         <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 16, padding: '18px 12px 8px', marginBottom: 16 }}>
           <div style={{ fontSize: 13.5, fontWeight: 600, color: t.text, marginBottom: 8, paddingLeft: 6 }}>Flujo de caja neto · últimos 6 meses</div>
-          <div style={{ width: '100%', height: 150 }}>
+          <div style={{ width: '100%', height: 150, filter: t.glow ? `drop-shadow(0 0 10px ${t.accent}40)` : undefined }}>
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={trend} margin={{ top: 8, right: 10, left: -4, bottom: 0 }}>
+              <AreaChart data={trend} margin={{ top: 8, right: 10, left: -4, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="gradIncomeRep" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={t.income} stopOpacity={0.3}/><stop offset="100%" stopColor={t.income} stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="gradExpenseRep" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={t.expense} stopOpacity={0.3}/><stop offset="100%" stopColor={t.expense} stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="gradAhorroRep" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={t.accent} stopOpacity={0.3}/><stop offset="100%" stopColor={t.accent} stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke={t.border} vertical={false} />
                 <XAxis dataKey="label" tick={{ fontSize: 11, fill: t.textMuted }} axisLine={{ stroke: t.border }} tickLine={false} />
                 <YAxis tick={{ fontSize: 10, fill: t.textMuted }} axisLine={false} tickLine={false} width={38} tickFormatter={formatCompactNumber} />
                 <Tooltip formatter={(v)=>formatMoney(v, settings.currency)} contentStyle={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 8, fontSize: 12 }} labelStyle={{ color: t.text }} itemStyle={{ color: t.text }} />
-                <Line type="monotone" dataKey="Ingresos" stroke={t.income} strokeWidth={2.2} dot={false} />
-                <Line type="monotone" dataKey="Gastos" stroke={t.expense} strokeWidth={2.2} dot={false} />
-                <Line type="monotone" dataKey="Ahorro" stroke={t.accent} strokeWidth={2.2} dot={false} />
-              </LineChart>
+                <Area type="monotone" dataKey="Ingresos" stroke={t.income} strokeWidth={2.2} fill={t.glow ? 'url(#gradIncomeRep)' : 'transparent'} dot={lastPointDot(t.income, trend.length)} activeDot={{ r: 4 }} />
+                <Area type="monotone" dataKey="Gastos" stroke={t.expense} strokeWidth={2.2} fill={t.glow ? 'url(#gradExpenseRep)' : 'transparent'} dot={lastPointDot(t.expense, trend.length)} activeDot={{ r: 4 }} />
+                <Area type="monotone" dataKey="Ahorro" stroke={t.accent} strokeWidth={2.2} fill={t.glow ? 'url(#gradAhorroRep)' : 'transparent'} dot={lastPointDot(t.accent, trend.length)} activeDot={{ r: 4 }} />
+              </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 16, padding: '18px 12px 8px', marginBottom: 16 }}>
           <div style={{ fontSize: 13.5, fontWeight: 600, color: t.text, marginBottom: 8, paddingLeft: 6 }}>Evolución del patrimonio neto</div>
-          <div style={{ width: '100%', height: 130 }}>
+          <div style={{ width: '100%', height: 130, filter: t.glow ? `drop-shadow(0 0 10px ${t.accent}40)` : undefined }}>
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={netWorthTrend} margin={{ top: 8, right: 10, left: -4, bottom: 0 }}>
+              <AreaChart data={netWorthTrend} margin={{ top: 8, right: 10, left: -4, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="gradPatrimonio" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={t.accent} stopOpacity={0.32}/><stop offset="100%" stopColor={t.accent} stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke={t.border} vertical={false} />
                 <XAxis dataKey="label" tick={{ fontSize: 11, fill: t.textMuted }} axisLine={{ stroke: t.border }} tickLine={false} />
                 <YAxis tick={{ fontSize: 10, fill: t.textMuted }} axisLine={false} tickLine={false} width={38} tickFormatter={formatCompactNumber} />
                 <Tooltip formatter={(v)=>formatMoney(v, settings.currency)} contentStyle={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 8, fontSize: 12 }} labelStyle={{ color: t.text }} itemStyle={{ color: t.text }} />
-                <Line type="monotone" dataKey="Patrimonio" stroke={t.accent} strokeWidth={2.2} dot={false} />
-              </LineChart>
+                <Area type="monotone" dataKey="Patrimonio" stroke={t.accent} strokeWidth={2.2} fill={t.glow ? 'url(#gradPatrimonio)' : 'transparent'} dot={lastPointDot(t.accent, netWorthTrend.length)} activeDot={{ r: 4 }} />
+              </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
