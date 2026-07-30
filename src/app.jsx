@@ -226,6 +226,43 @@ const RECEIVABLE_TYPES = [
   { value: 'other', label: 'Otra', icon: 'MoreHorizontal' },
 ];
 
+const PRIORITY_META = {
+  1: { label: 'P1', full: 'Prioridad 1', color: '#D9695E' },
+  2: { label: 'P2', full: 'Prioridad 2', color: '#D9A94A' },
+  3: { label: 'P3', full: 'Prioridad 3', color: '#8FA7D9' },
+};
+const PRIORITY_FILTER_OPTIONS = [
+  { value: 'all', label: 'Todas' },
+  { value: '1', label: 'P1' },
+  { value: '2', label: 'P2' },
+  { value: '3', label: 'P3' },
+  { value: 'none', label: 'Sin prio.' },
+];
+function normalizePriority(p) { return (p === 1 || p === 2 || p === 3) ? p : null; }
+function groupByPriority(list) {
+  const groups = { 1: [], 2: [], 3: [], none: [] };
+  list.forEach(item => { groups[normalizePriority(item.priority) || 'none'].push(item); });
+  return groups;
+}
+function PriorityBadge({ priority, t }) {
+  const meta = PRIORITY_META[normalizePriority(priority)];
+  if (!meta) return null;
+  return (
+    <div style={{ fontSize: 10, fontWeight: 700, color: meta.color, background: meta.color+'22', borderRadius: 8, padding: '2px 7px', letterSpacing: '0.02em' }}>
+      {meta.label}
+    </div>
+  );
+}
+function PrioritySection({ label, color, t }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '18px 0 8px' }}>
+      {color && <div style={{ width: 7, height: 7, borderRadius: '50%', background: color }} />}
+      <div style={{ fontSize: 11, fontWeight: 700, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{label}</div>
+      <div style={{ flex: 1, height: 1, background: t.border }} />
+    </div>
+  );
+}
+
 const DEFAULT_DATA = {
   transactions: [],
   categories: DEFAULT_CATEGORIES,
@@ -833,18 +870,25 @@ function CategoryBadge({ cat, size = 34, t }) {
 }
 
 /* ---------------------------------- BARRA SUPERIOR ---------------------------------- */
-function TopBar({ title, subtitle, t, onSettings, centered }) {
+function TopBar({ title, subtitle, t, onSettings, centered, onAdd, addLabel }) {
   return (
     <div style={{ padding: 'calc(22px + env(safe-area-inset-top)) 20px 14px', display: 'flex', alignItems: 'flex-start', justifyContent: centered ? 'center' : 'space-between' }}>
       <div style={{ textAlign: centered ? 'center' : 'left' }}>
         <div style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 22, color: t.text, fontWeight: 600 }}>{title}</div>
         {subtitle && <div style={{ fontSize: 13, color: t.textMuted, marginTop: 3 }}>{subtitle}</div>}
       </div>
-      {onSettings && (
-        <button onClick={onSettings} className="fz-icon-btn" style={{ background: t.surfaceAlt, border: `1px solid ${t.border}` }}>
-          <Icon name="Settings" size={17} color={t.textMuted} />
-        </button>
-      )}
+      <div style={{ display: 'flex', gap: 8 }}>
+        {onAdd && (
+          <button onClick={onAdd} title={addLabel || 'Añadir'} className="fz-icon-btn" style={{ background: t.accent, border: `1px solid ${t.accent}` }}>
+            <Icon name="Plus" size={17} color={t.accentText} />
+          </button>
+        )}
+        {onSettings && (
+          <button onClick={onSettings} className="fz-icon-btn" style={{ background: t.surfaceAlt, border: `1px solid ${t.border}` }}>
+            <Icon name="Settings" size={17} color={t.textMuted} />
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -1524,9 +1568,51 @@ function SavingsGoalsContent({ data, t, onOpenModal }) {
 }
 
 /* ---------------------------------- DEUDAS ---------------------------------- */
+function DebtCard({ debt, t, settings, onOpenModal }) {
+  const stats = getDebtStats(debt);
+  return (
+    <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 16, padding: '14px 16px', marginBottom: 12 }}>
+      <div onClick={()=>onOpenModal({ type: 'debt', debt })} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10, cursor: 'pointer' }}>
+        <CategoryBadge cat={{ icon: debt.icon, color: debt.color }} t={t} size={34} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ fontSize: 14, color: t.text, fontWeight: 600 }}>{debt.name}</div>
+            <PriorityBadge priority={debt.priority} t={t} />
+          </div>
+          <div style={{ fontSize: 11.5, color: t.textMuted }}>
+            {formatMoney(debt.currentBalance, settings.currency)} pendiente{debt.interestRate ? ` · ${debt.interestRate}% anual` : ''}
+          </div>
+          {debt.note && <div style={{ fontSize: 11.5, color: t.textMuted, fontStyle: 'italic', marginTop: 2 }}>{debt.note}</div>}
+        </div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: t.income }}>{stats.percentPaid.toFixed(0)}%</div>
+      </div>
+      <ProgressBar percent={stats.percentPaid} color={t.income} track={t.surfaceAlt} />
+      <div style={{ display: 'flex', gap: 12, marginTop: 10, fontSize: 11.5, color: t.textMuted, flexWrap: 'wrap' }}>
+        {debt.minimumPayment > 0 && <span>Cuota: {formatMoney(debt.minimumPayment, settings.currency)}/mes</span>}
+        {stats.monthsRemaining !== null && <span>{stats.monthsRemaining} meses restantes</span>}
+        {stats.totalInterest !== null && <span>≈{formatMoney(stats.totalInterest, settings.currency)} en intereses</span>}
+      </div>
+      <button onClick={()=>onOpenModal({ type: 'debtPayment', debt })}
+        style={{ width: '100%', marginTop: 12, padding: '9px', borderRadius: 10, border: 'none', background: t.accent, color: t.accentText, fontWeight: 700, fontSize: 12.5, cursor: 'pointer' }}>
+        Registrar pago
+      </button>
+    </div>
+  );
+}
+
 function DebtsContent({ data, t, onOpenModal }) {
   const { debts, settings } = data;
+  const [priorityFilter, setPriorityFilter] = useState('all');
   const totalDebt = debts.reduce((s,d)=>s+Number(d.currentBalance||0),0);
+  const hasPriorities = debts.some(d=>normalizePriority(d.priority));
+  const filtered = priorityFilter === 'all' ? debts : debts.filter(d => priorityFilter === 'none' ? !normalizePriority(d.priority) : normalizePriority(d.priority) === Number(priorityFilter));
+  const groups = groupByPriority(filtered);
+  const groupOrder = [
+    { key: 1, label: PRIORITY_META[1].full, color: PRIORITY_META[1].color },
+    { key: 2, label: PRIORITY_META[2].full, color: PRIORITY_META[2].color },
+    { key: 3, label: PRIORITY_META[3].full, color: PRIORITY_META[3].color },
+    { key: 'none', label: 'Sin prioridad', color: null },
+  ];
   return (
     <div style={{ padding: '0 20px' }}>
       {debts.length > 0 && (
@@ -1535,36 +1621,25 @@ function DebtsContent({ data, t, onOpenModal }) {
           <div style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 22, color: t.expense, fontWeight: 600, marginTop: 3 }}>{formatMoney(totalDebt, settings.currency)}</div>
         </div>
       )}
+      {debts.length > 5 && (
+        <div style={{ marginBottom: 14 }}>
+          <SegmentedControl t={t} value={priorityFilter} onChange={setPriorityFilter} options={PRIORITY_FILTER_OPTIONS} />
+        </div>
+      )}
       {debts.length === 0 ? (
         <EmptyState t={t} text="No tienes deudas registradas." onAction={()=>onOpenModal({ type: 'debt' })} actionLabel="Registrar deuda" />
-      ) : debts.map(debt => {
-        const stats = getDebtStats(debt);
-        return (
-          <div key={debt.id} style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 16, padding: '14px 16px', marginBottom: 12 }}>
-            <div onClick={()=>onOpenModal({ type: 'debt', debt })} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10, cursor: 'pointer' }}>
-              <CategoryBadge cat={{ icon: debt.icon, color: debt.color }} t={t} size={34} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14, color: t.text, fontWeight: 600 }}>{debt.name}</div>
-                <div style={{ fontSize: 11.5, color: t.textMuted }}>
-                  {formatMoney(debt.currentBalance, settings.currency)} pendiente{debt.interestRate ? ` · ${debt.interestRate}% anual` : ''}
-                </div>
-                {debt.note && <div style={{ fontSize: 11.5, color: t.textMuted, fontStyle: 'italic', marginTop: 2 }}>{debt.note}</div>}
-              </div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: t.income }}>{stats.percentPaid.toFixed(0)}%</div>
-            </div>
-            <ProgressBar percent={stats.percentPaid} color={t.income} track={t.surfaceAlt} />
-            <div style={{ display: 'flex', gap: 12, marginTop: 10, fontSize: 11.5, color: t.textMuted, flexWrap: 'wrap' }}>
-              {debt.minimumPayment > 0 && <span>Cuota: {formatMoney(debt.minimumPayment, settings.currency)}/mes</span>}
-              {stats.monthsRemaining !== null && <span>{stats.monthsRemaining} meses restantes</span>}
-              {stats.totalInterest !== null && <span>≈{formatMoney(stats.totalInterest, settings.currency)} en intereses</span>}
-            </div>
-            <button onClick={()=>onOpenModal({ type: 'debtPayment', debt })}
-              style={{ width: '100%', marginTop: 12, padding: '9px', borderRadius: 10, border: 'none', background: t.accent, color: t.accentText, fontWeight: 700, fontSize: 12.5, cursor: 'pointer' }}>
-              Registrar pago
-            </button>
+      ) : filtered.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '24px 0', color: t.textMuted, fontSize: 13 }}>Ninguna deuda con este filtro.</div>
+      ) : hasPriorities ? (
+        groupOrder.map(g => groups[g.key].length > 0 && (
+          <div key={g.key}>
+            <PrioritySection label={g.label} color={g.color} t={t} />
+            {groups[g.key].map(debt => <DebtCard key={debt.id} debt={debt} t={t} settings={settings} onOpenModal={onOpenModal} />)}
           </div>
-        );
-      })}
+        ))
+      ) : (
+        filtered.map(debt => <DebtCard key={debt.id} debt={debt} t={t} settings={settings} onOpenModal={onOpenModal} />)
+      )}
       <button onClick={()=>onOpenModal({ type: 'debt' })}
         style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: t.surfaceAlt, border: `1px dashed ${t.border}`, borderRadius: 12, padding: '11px', color: t.accent, fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 16 }}>
         <Icon name="Plus" size={14} color={t.accent} /> Nueva deuda
@@ -1573,9 +1648,44 @@ function DebtsContent({ data, t, onOpenModal }) {
   );
 }
 
+function ReceivableCard({ r, t, settings, onOpenModal }) {
+  const stats = getReceivableStats(r);
+  return (
+    <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 16, padding: '14px 16px', marginBottom: 12 }}>
+      <div onClick={()=>onOpenModal({ type: 'receivable', receivable: r })} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10, cursor: 'pointer' }}>
+        <CategoryBadge cat={{ icon: r.icon, color: r.color }} t={t} size={34} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ fontSize: 14, color: t.text, fontWeight: 600 }}>{r.name}</div>
+            <PriorityBadge priority={r.priority} t={t} />
+          </div>
+          <div style={{ fontSize: 11.5, color: t.textMuted }}>{formatMoney(r.currentBalance, settings.currency)} pendiente por cobrar</div>
+          {r.note && <div style={{ fontSize: 11.5, color: t.textMuted, fontStyle: 'italic', marginTop: 2 }}>{r.note}</div>}
+        </div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: t.income }}>{stats.percentCollected.toFixed(0)}%</div>
+      </div>
+      <ProgressBar percent={stats.percentCollected} color={t.income} track={t.surfaceAlt} />
+      <button onClick={()=>onOpenModal({ type: 'receivablePayment', receivable: r })}
+        style={{ width: '100%', marginTop: 12, padding: '9px', borderRadius: 10, border: 'none', background: t.accent, color: t.accentText, fontWeight: 700, fontSize: 12.5, cursor: 'pointer' }}>
+        Registrar abono
+      </button>
+    </div>
+  );
+}
+
 function ReceivablesContent({ data, t, onOpenModal }) {
   const { receivables, settings } = data;
+  const [priorityFilter, setPriorityFilter] = useState('all');
   const totalReceivable = (receivables||[]).reduce((s,r)=>s+Number(r.currentBalance||0),0);
+  const hasPriorities = receivables.some(r=>normalizePriority(r.priority));
+  const filtered = priorityFilter === 'all' ? receivables : receivables.filter(r => priorityFilter === 'none' ? !normalizePriority(r.priority) : normalizePriority(r.priority) === Number(priorityFilter));
+  const groups = groupByPriority(filtered);
+  const groupOrder = [
+    { key: 1, label: PRIORITY_META[1].full, color: PRIORITY_META[1].color },
+    { key: 2, label: PRIORITY_META[2].full, color: PRIORITY_META[2].color },
+    { key: 3, label: PRIORITY_META[3].full, color: PRIORITY_META[3].color },
+    { key: 'none', label: 'Sin prioridad', color: null },
+  ];
   return (
     <div style={{ padding: '0 20px' }}>
       {receivables.length > 0 && (
@@ -1584,29 +1694,25 @@ function ReceivablesContent({ data, t, onOpenModal }) {
           <div style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 22, color: t.income, fontWeight: 600, marginTop: 3 }}>{formatMoney(totalReceivable, settings.currency)}</div>
         </div>
       )}
+      {receivables.length > 5 && (
+        <div style={{ marginBottom: 14 }}>
+          <SegmentedControl t={t} value={priorityFilter} onChange={setPriorityFilter} options={PRIORITY_FILTER_OPTIONS} />
+        </div>
+      )}
       {receivables.length === 0 ? (
         <EmptyState t={t} text="No tienes cuentas por cobrar registradas." onAction={()=>onOpenModal({ type: 'receivable' })} actionLabel="Registrar por cobrar" />
-      ) : receivables.map(r => {
-        const stats = getReceivableStats(r);
-        return (
-          <div key={r.id} style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 16, padding: '14px 16px', marginBottom: 12 }}>
-            <div onClick={()=>onOpenModal({ type: 'receivable', receivable: r })} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10, cursor: 'pointer' }}>
-              <CategoryBadge cat={{ icon: r.icon, color: r.color }} t={t} size={34} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14, color: t.text, fontWeight: 600 }}>{r.name}</div>
-                <div style={{ fontSize: 11.5, color: t.textMuted }}>{formatMoney(r.currentBalance, settings.currency)} pendiente por cobrar</div>
-                {r.note && <div style={{ fontSize: 11.5, color: t.textMuted, fontStyle: 'italic', marginTop: 2 }}>{r.note}</div>}
-              </div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: t.income }}>{stats.percentCollected.toFixed(0)}%</div>
-            </div>
-            <ProgressBar percent={stats.percentCollected} color={t.income} track={t.surfaceAlt} />
-            <button onClick={()=>onOpenModal({ type: 'receivablePayment', receivable: r })}
-              style={{ width: '100%', marginTop: 12, padding: '9px', borderRadius: 10, border: 'none', background: t.accent, color: t.accentText, fontWeight: 700, fontSize: 12.5, cursor: 'pointer' }}>
-              Registrar abono
-            </button>
+      ) : filtered.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '24px 0', color: t.textMuted, fontSize: 13 }}>Ninguna cuenta con este filtro.</div>
+      ) : hasPriorities ? (
+        groupOrder.map(g => groups[g.key].length > 0 && (
+          <div key={g.key}>
+            <PrioritySection label={g.label} color={g.color} t={t} />
+            {groups[g.key].map(r => <ReceivableCard key={r.id} r={r} t={t} settings={settings} onOpenModal={onOpenModal} />)}
           </div>
-        );
-      })}
+        ))
+      ) : (
+        filtered.map(r => <ReceivableCard key={r.id} r={r} t={t} settings={settings} onOpenModal={onOpenModal} />)
+      )}
       <button onClick={()=>onOpenModal({ type: 'receivable' })}
         style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: t.surfaceAlt, border: `1px dashed ${t.border}`, borderRadius: 12, padding: '11px', color: t.accent, fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 16 }}>
         <Icon name="Plus" size={14} color={t.accent} /> Nueva cuenta por cobrar
@@ -1766,9 +1872,14 @@ function SuscripcionesContent({ data, t, onOpenModal, onConfirm, onAdjust, onSki
 
 /* ---------------------------------- METAS (contenedor con sub-tabs) ---------------------------------- */
 function MetasScreen({ data, t, subTab, setSubTab, onEditBudget, onOpenModal, onConfirmRecurring, onAdjustRecurring, onSkipRecurring, onUnsubscribeRecurring, onReactivateRecurring }) {
+  const addBySubTab = {
+    subs: { type: 'recurring' }, goals: { type: 'goal' }, debts: { type: 'debt' }, receivables: { type: 'receivable' },
+  };
+  const addLabelBySubTab = { subs: 'Nueva recurrente', goals: 'Nueva meta', debts: 'Nueva deuda', receivables: 'Nueva cuenta por cobrar' };
+  const addPayload = addBySubTab[subTab];
   return (
     <div>
-      <TopBar title="Metas" t={t} />
+      <TopBar title="Metas" t={t} onAdd={addPayload ? ()=>onOpenModal(addPayload) : undefined} addLabel={addLabelBySubTab[subTab]} />
       <div style={{ padding: '0 20px', marginBottom: 16 }}>
         <SegmentedControl t={t} value={subTab} onChange={setSubTab}
           options={[{value:'budgets',label:'Límites'},{value:'subs',label:'Suscrip.'},{value:'goals',label:'Ahorro'},{value:'debts',label:'Deudas'},{value:'receivables',label:'Cobrar'}]} />
@@ -3145,6 +3256,7 @@ function DebtModal({ t, accounts, settings, initial, onSave, onDelete, onClose }
   const [startDate, setStartDate] = useState(initial?.startDate || todayISO());
   const [linkedAccountId, setLinkedAccountId] = useState(initial?.linkedAccountId || '');
   const [note, setNote] = useState(initial?.note || '');
+  const [priority, setPriority] = useState(normalizePriority(initial?.priority));
   const canSave = name.trim().length > 0 && Number(originalAmount) > 0;
 
   const chooseType = (val) => {
@@ -3157,7 +3269,7 @@ function DebtModal({ t, accounts, settings, initial, onSave, onDelete, onClose }
     if (!canSave) return;
     onSave({
       id: initial?.id || uid(),
-      name: name.trim(), type, icon, color,
+      name: name.trim(), type, icon, color, priority,
       originalAmount: Number(originalAmount),
       currentBalance: currentBalance !== '' ? Number(currentBalance) : Number(originalAmount),
       interestRate: interestRate !== '' ? Number(interestRate) : null,
@@ -3195,6 +3307,22 @@ function DebtModal({ t, accounts, settings, initial, onSave, onDelete, onClose }
         {COLOR_OPTIONS.map(c=>(
           <button key={c} onClick={()=>setColor(c)} style={{ width: 26, height: 26, borderRadius: '50%', background: c, cursor: 'pointer', border: color===c?`2px solid ${t.text}`:'2px solid transparent' }} />
         ))}
+      </div>
+
+      <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Prioridad</div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
+        {[1,2,3].map(p=>(
+          <button key={p} onClick={()=>setPriority(p)}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 20, cursor: 'pointer',
+              border: `1px solid ${priority===p ? PRIORITY_META[p].color : t.border}`, background: priority===p ? PRIORITY_META[p].color+'22' : t.surfaceAlt }}>
+            <span style={{ fontSize: 12, color: priority===p ? PRIORITY_META[p].color : t.text, fontWeight: 600 }}>{PRIORITY_META[p].full}</span>
+          </button>
+        ))}
+        <button onClick={()=>setPriority(null)}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 20, cursor: 'pointer',
+            border: `1px solid ${priority===null ? t.accent : t.border}`, background: priority===null ? t.accent+'22' : t.surfaceAlt }}>
+          <span style={{ fontSize: 12, color: priority===null ? t.accent : t.text, fontWeight: 600 }}>Sin prioridad</span>
+        </button>
       </div>
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
@@ -3355,6 +3483,7 @@ function ReceivableModal({ t, accounts, settings, initial, onSave, onDelete, onC
   const [startDate, setStartDate] = useState(initial?.startDate || todayISO());
   const [linkedAccountId, setLinkedAccountId] = useState(initial?.linkedAccountId || '');
   const [note, setNote] = useState(initial?.note || '');
+  const [priority, setPriority] = useState(normalizePriority(initial?.priority));
   const canSave = name.trim().length > 0 && Number(originalAmount) > 0;
 
   const chooseType = (val) => {
@@ -3367,7 +3496,7 @@ function ReceivableModal({ t, accounts, settings, initial, onSave, onDelete, onC
     if (!canSave) return;
     onSave({
       id: initial?.id || uid(),
-      name: name.trim(), type, icon, color,
+      name: name.trim(), type, icon, color, priority,
       originalAmount: Number(originalAmount),
       currentBalance: currentBalance !== '' ? Number(currentBalance) : Number(originalAmount),
       dueDate: dueDate !== '' ? Number(dueDate) : null,
@@ -3403,6 +3532,22 @@ function ReceivableModal({ t, accounts, settings, initial, onSave, onDelete, onC
         {COLOR_OPTIONS.map(c=>(
           <button key={c} onClick={()=>setColor(c)} style={{ width: 26, height: 26, borderRadius: '50%', background: c, cursor: 'pointer', border: color===c?`2px solid ${t.text}`:'2px solid transparent' }} />
         ))}
+      </div>
+
+      <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Prioridad</div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
+        {[1,2,3].map(p=>(
+          <button key={p} onClick={()=>setPriority(p)}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 20, cursor: 'pointer',
+              border: `1px solid ${priority===p ? PRIORITY_META[p].color : t.border}`, background: priority===p ? PRIORITY_META[p].color+'22' : t.surfaceAlt }}>
+            <span style={{ fontSize: 12, color: priority===p ? PRIORITY_META[p].color : t.text, fontWeight: 600 }}>{PRIORITY_META[p].full}</span>
+          </button>
+        ))}
+        <button onClick={()=>setPriority(null)}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 20, cursor: 'pointer',
+            border: `1px solid ${priority===null ? t.accent : t.border}`, background: priority===null ? t.accent+'22' : t.surfaceAlt }}>
+          <span style={{ fontSize: 12, color: priority===null ? t.accent : t.text, fontWeight: 600 }}>Sin prioridad</span>
+        </button>
       </div>
 
       <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
