@@ -850,14 +850,14 @@ function TopBar({ title, subtitle, t, onSettings, centered }) {
 }
 
 /* ---------------------------------- INICIO ---------------------------------- */
-function AccountMiniCard({ account, balance, t, settings }) {
+function AccountMiniCard({ account, balance, t, settings, balanceHidden }) {
   return (
     <div style={{ flexShrink: 0, minWidth: 132, background: t.glow ? t.surface + 'CC' : t.surface, border: `1px solid ${t.border}`, borderRadius: t.glow ? 18 : 14, padding: '12px 14px', backdropFilter: t.glow ? 'blur(10px)' : undefined, WebkitBackdropFilter: t.glow ? 'blur(10px)' : undefined }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
         <CategoryBadge cat={{ icon: account.icon, color: account.color }} t={t} size={26} />
         <div style={{ fontSize: 11.5, color: t.textMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{account.name}</div>
       </div>
-      <div style={{ fontSize: 14, fontWeight: 700, color: balance < 0 ? t.expense : t.text, whiteSpace: 'nowrap' }}>{formatMoney(balance, account.currency || settings.currency)}</div>
+      <div style={{ fontSize: 14, fontWeight: 700, color: balance < 0 ? t.expense : t.text, whiteSpace: 'nowrap' }}>{balanceHidden ? '••••' : formatMoney(balance, account.currency || settings.currency)}</div>
     </div>
   );
 }
@@ -1049,7 +1049,7 @@ function InicioScreen({ data, setData, t, goHistorial, openSheet, onQuickAdd, on
         {visibleAccounts.length > 0 && (
           <div style={{ display: 'flex', gap: 10, overflowX: 'auto', marginTop: 16, paddingBottom: 4 }}>
             {visibleAccounts.map(acc => (
-              <AccountMiniCard key={acc.id} account={acc} balance={getAccountBalance(acc.id, transactions, accounts)} t={t} settings={settings} />
+              <AccountMiniCard key={acc.id} account={acc} balance={getAccountBalance(acc.id, transactions, accounts)} t={t} settings={settings} balanceHidden={balanceHidden} />
             ))}
           </div>
         )}
