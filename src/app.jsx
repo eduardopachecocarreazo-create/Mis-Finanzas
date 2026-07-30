@@ -1985,10 +1985,18 @@ function ReportesScreen({ data, t }) {
     return { name: acc?acc.name:'Otra', value, color: acc?acc.color:t.textMuted };
   }).sort((a,b)=>b.value-a.value);
 
-  const catComparison = Object.keys(byCat).map(catId => {
+  // El comparativo por categoría siempre es mes actual vs mes anterior, sin importar
+  // qué período (semana/trimestre/año) esté seleccionado arriba.
+  const monthRangeNow = getPeriodRange('month', 0, customFrom, customTo);
+  const prevMonthRangeNow = getPeriodRange('month', -1, customFrom, customTo);
+  const monthTxCompare = transactions.filter(tx => tx.date >= monthRangeNow.from && tx.date <= monthRangeNow.to);
+  const prevMonthTxCompare = transactions.filter(tx => tx.date >= prevMonthRangeNow.from && tx.date <= prevMonthRangeNow.to);
+  const byCatMonth = {};
+  monthTxCompare.filter(t2=>t2.type==='expense').forEach(t2=>{ byCatMonth[t2.category]=(byCatMonth[t2.category]||0)+Number(t2.amount); });
+  const catComparison = Object.keys(byCatMonth).map(catId => {
     const cat = categories.find(c=>c.id===catId);
-    const current = byCat[catId] || 0;
-    const previous = prevTx.filter(t2=>t2.type==='expense' && t2.category===catId).reduce((s,t2)=>s+Number(t2.amount),0);
+    const current = byCatMonth[catId] || 0;
+    const previous = prevMonthTxCompare.filter(t2=>t2.type==='expense' && t2.category===catId).reduce((s,t2)=>s+Number(t2.amount),0);
     const pct = previous>0 ? ((current-previous)/previous*100) : (current>0?100:0);
     return { catId, name: cat?cat.name:'Otros', current, previous, pct };
   }).sort((a,b)=>b.current-a.current);
@@ -2195,13 +2203,13 @@ function ReportesScreen({ data, t }) {
 
         {catComparison.length>0 && (
           <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 13.5, fontWeight: 600, color: t.text, marginBottom: 8 }}>Comparativo vs período anterior</div>
+            <div style={{ fontSize: 13.5, fontWeight: 600, color: t.text, marginBottom: 8 }}>Comparativo: mes actual vs mes anterior</div>
             <div style={{ background: t.glow ? t.surface + 'CC' : t.surface, border: `1px solid ${t.border}`, borderRadius: t.glow ? 20 : 16, overflow: 'hidden', backdropFilter: t.glow ? 'blur(10px)' : undefined, WebkitBackdropFilter: t.glow ? 'blur(10px)' : undefined }}>
               {catComparison.map((c,i)=>(
                 <div key={c.catId} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderTop: i===0?'none':`1px solid ${t.border}` }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 13, color: t.text, fontWeight: 500 }}>{c.name}</div>
-                    <div style={{ fontSize: 11, color: t.textMuted }}>Antes: {formatMoney(c.previous, settings.currency)}</div>
+                    <div style={{ fontSize: 11, color: t.textMuted }}>Mes anterior: {formatMoney(c.previous, settings.currency)}</div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: t.text }}>{formatMoney(c.current, settings.currency)}</div>
