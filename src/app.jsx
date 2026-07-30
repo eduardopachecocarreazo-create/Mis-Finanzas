@@ -3667,11 +3667,12 @@ function LockScreen({ t, actualPin, biometricCredentialId, onUnlock }) {
     if (!biometricCredentialId || attemptingRef.current) return;
     attemptingRef.current = true;
     setBiometricTried(true);
+    window.__fzAuthBusy = true; // frena una recarga del service worker a mitad del diálogo nativo
     try {
       const ok = await verifyBiometricCredential(biometricCredentialId);
       if (ok) onUnlock();
     } catch { /* usuario canceló o falló — se queda en el PIN */ }
-    finally { attemptingRef.current = false; }
+    finally { attemptingRef.current = false; window.__fzAuthBusy = false; }
   }, [biometricCredentialId, onUnlock]);
 
   useEffect(() => { tryBiometric(); }, []);
@@ -3928,7 +3929,13 @@ function App() {
           merged = { ...merged, accounts: ensureDefaultAccounts(merged.accounts, merged.settings.currency) };
           merged = reconcileRecurring(merged);
           setData(merged);
-          if (merged.settings.pin) setLocked(true);
+          // sessionStorage sobrevive a un reload silencioso (p. ej. cuando el
+          // service worker activa una versión nueva y recarga la pestaña) pero
+          // se borra al cerrar de verdad la app — así no se vuelve a pedir PIN/
+          // Face ID por un refresco interno que el usuario ni notó.
+          let alreadyUnlockedThisSession = false;
+          try { alreadyUnlockedThisSession = sessionStorage.getItem('fz_session_unlocked') === '1'; } catch {}
+          if (merged.settings.pin && !alreadyUnlockedThisSession) setLocked(true);
         }
       } catch (e) {
         // sin datos previos o almacenamiento no disponible: se usa el estado por defecto
@@ -4268,7 +4275,8 @@ function App() {
             )}
 
             {locked && data.settings.pin && (
-              <LockScreen t={t} actualPin={data.settings.pin} biometricCredentialId={data.settings.biometricCredentialId} onUnlock={()=>setLocked(false)} />
+              <LockScreen t={t} actualPin={data.settings.pin} biometricCredentialId={data.settings.biometricCredentialId}
+                onUnlock={()=>{ try { sessionStorage.setItem('fz_session_unlocked', '1'); } catch {} setLocked(false); }} />
             )}
           </>
         )}

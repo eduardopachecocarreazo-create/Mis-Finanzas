@@ -41,8 +41,17 @@
     let reloaded = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       if (reloaded) return;
-      reloaded = true;
-      window.location.reload();
+      // Si hay una verificación de PIN/Face ID en curso, esperamos a que termine
+      // antes de recargar -- si no, la recarga cancela el diálogo nativo a mitad
+      // de camino y el usuario ve el prompt de biometría aparecer y desaparecer.
+      const doReload = () => { reloaded = true; window.location.reload(); };
+      if (window.__fzAuthBusy) {
+        const check = setInterval(() => {
+          if (!window.__fzAuthBusy) { clearInterval(check); doReload(); }
+        }, 250);
+      } else {
+        doReload();
+      }
     });
   }
 
