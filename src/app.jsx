@@ -13,7 +13,15 @@ import {
   Gift, Plane, Dumbbell, BookOpen, Coffee, Landmark, PiggyBank, Smartphone,
   ArrowRightLeft, Archive, Repeat, Pause, Play, Users, Percent, PartyPopper,
   Info, Upload, FileJson, FileSpreadsheet, AlertTriangle, RefreshCw, Fingerprint,
-  Eye, EyeOff
+  Eye, EyeOff,
+  Tv, MonitorPlay, Clapperboard, Youtube, Twitch, Ticket, Music2, Headphones,
+  Podcast, Radio, Gamepad2, Joystick, Wifi, Router, Globe, Phone, Cloud, Server,
+  Database, Code2, Terminal, Monitor, Github, Figma, Slack, Palette, Camera,
+  Sparkles, Bot, Newspaper, Rss, Library, Languages, Lightbulb, Droplet, Flame,
+  Plug, Recycle, Wrench, Umbrella, Shield, ShieldCheck, Key, HeartPulse,
+  Stethoscope, Pill, Pizza, ShoppingCart, Store, Package, Truck, Bike, Bus,
+  Train, Fuel, Briefcase, Building2, PawPrint, Dog, Baby, Scissors, Shirt,
+  Crown, Star, Bell, Mail, Receipt, Coins, CalendarClock
 } from 'lucide-react';
 
 const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev';
@@ -36,7 +44,15 @@ const ICONS = {
   Plane, Dumbbell, BookOpen, Coffee, Landmark, PiggyBank, Smartphone,
   ArrowRightLeft, Archive, Repeat, Pause, Play, Users, Percent, PartyPopper,
   Info, Upload, FileJson, FileSpreadsheet, AlertTriangle, RefreshCw, Fingerprint,
-  Eye, EyeOff
+  Eye, EyeOff,
+  Tv, MonitorPlay, Clapperboard, Youtube, Twitch, Ticket, Music2, Headphones,
+  Podcast, Radio, Gamepad2, Joystick, Wifi, Router, Globe, Phone, Cloud, Server,
+  Database, Code2, Terminal, Monitor, Github, Figma, Slack, Palette, Camera,
+  Sparkles, Bot, Newspaper, Rss, Library, Languages, Lightbulb, Droplet, Flame,
+  Plug, Recycle, Wrench, Umbrella, Shield, ShieldCheck, Key, HeartPulse,
+  Stethoscope, Pill, Pizza, ShoppingCart, Store, Package, Truck, Bike, Bus,
+  Train, Fuel, Briefcase, Building2, PawPrint, Dog, Baby, Scissors, Shirt,
+  Crown, Star, Bell, Mail, Receipt, Coins, CalendarClock
 };
 const Icon = ({ name, size = 18, color, style }) => {
   const Cmp = ICONS[name] || MoreHorizontal;
@@ -90,6 +106,111 @@ const FREQUENCIES = [
 ];
 
 const GOAL_ICON_OPTIONS = ['Target','Plane','Gift','PiggyBank','Home','Laptop','GraduationCap','Heart','Dumbbell','Car','MoreHorizontal'];
+
+/* -------------------------- SUSCRIPCIONES: ICONOS -------------------------- */
+const SUBSCRIPTION_ICON_OPTIONS = [
+  'Tv','MonitorPlay','Clapperboard','Film','Youtube','Twitch','Ticket','Radio',
+  'Music2','Headphones','Podcast','Gamepad2','Joystick','Sparkles','Bot','Palette',
+  'Smartphone','Phone','Wifi','Router','Globe','Cloud','Server','Database',
+  'Laptop','Monitor','Code2','Terminal','Github','Figma','Slack','Camera',
+  'BookOpen','Newspaper','Library','Rss','GraduationCap','Languages','Briefcase','Mail',
+  'Home','Lightbulb','Zap','Droplet','Flame','Plug','Wrench','Recycle',
+  'Dumbbell','HeartPulse','Stethoscope','Pill','Heart','Shield','ShieldCheck','Umbrella',
+  'ShoppingCart','Utensils','Pizza','Coffee','Store','Package','Truck','Car',
+  'Bike','Bus','Train','Fuel','PawPrint','Dog','Baby','Users',
+  'Building2','Key','Receipt','Coins','CreditCard','Landmark','Repeat','MoreHorizontal',
+];
+
+function normalizeGuessText(s) {
+  return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
+// [ [palabras clave...], icono ] — se evalúa en orden, la primera coincidencia gana.
+// Marcas específicas antes que sustantivos genéricos.
+const SUBSCRIPTION_ICON_RULES = [
+  [['claro video','win sports','directv','netflix','disney','hbo','hbo max','prime video','primevideo',
+    'paramount','star+','starplus','crunchyroll','mubi','plex','apple tv','appletv','vix','pluto','cine',
+    'cinema','cinemark','cineco'], 'Tv'],
+  [['youtube'], 'Youtube'],
+  [['twitch','kick'], 'Twitch'],
+  [['spotify','deezer','tidal','apple music','applemusic','youtube music','musica','música'], 'Music2'],
+  [['audible','audiolibro','podcast'], 'Podcast'],
+  [['radio','emisora'], 'Radio'],
+  [['steam','playstation','ps plus','psplus','xbox','game pass','gamepass','nintendo',
+    'epic games','riot','roblox','fortnite','juego'], 'Gamepad2'],
+  [['claro','movistar','tigo','wom','etb','avantel','virgin','plan celular','celular',
+    'recarga','datos moviles','datos móviles'], 'Smartphone'],
+  [['internet','fibra','banda ancha','wifi','wi-fi','router','modem','módem'], 'Wifi'],
+  [['icloud','google one','googleone','dropbox','onedrive','mega','backblaze','nube',
+    'almacenamiento'], 'Cloud'],
+  [['chatgpt','openai','claude','anthropic','gemini','copilot','midjourney','perplexity',
+    'ia ','inteligencia artificial'], 'Sparkles'],
+  [['adobe','photoshop','lightroom','illustrator','canva','figma','capcut','premiere'], 'Palette'],
+  [['office','microsoft','microsoft 365','office 365','google workspace','workspace',
+    'notion','slack','zoom','trello','asana'], 'Briefcase'],
+  [['github','gitlab','vercel','netlify','aws','azure','digitalocean','hosting','servidor',
+    'vps','dominio','cloudflare'], 'Server'],
+  [['antivirus','vpn','nordvpn','1password','bitwarden','lastpass','dashlane','norton',
+    'mcafee','kaspersky'], 'ShieldCheck'],
+  [['periodico','periódico','el tiempo','el espectador','semana','revista','diario',
+    'noticias','medium','substack'], 'Newspaper'],
+  [['kindle','libro','libros','scribd','bookmate','biblioteca'], 'BookOpen'],
+  [['universidad','colegio','matricula','matrícula','pension colegio','pensión colegio',
+    'curso','platzi','udemy','coursera','domestika','educacion','educación','clases'], 'GraduationCap'],
+  [['duolingo','ingles','inglés','idioma','babbel'], 'Languages'],
+  [['gimnasio','gym','smartfit','smart fit','bodytech','stark','crossfit','entrenador',
+    'pesas','fitness','yoga','pilates'], 'Dumbbell'],
+  [['eps','sura','sanitas','compensar','coomeva','famisanar','nueva eps','salud',
+    'medicina prepagada','prepagada','colsanitas'], 'HeartPulse'],
+  [['odontolog','dentista','medico','médico','consulta','terapia','psicolog'], 'Stethoscope'],
+  [['farmacia','medicamento','pastilla','droguer'], 'Pill'],
+  [['seguro','poliza','póliza','soat','allianz','bolivar','bolívar','mapfre','axa',
+    'seguros','arl'], 'Shield'],
+  [['arriendo','alquiler','renta','hipoteca','administracion','administración',
+    'cuota administracion','vivienda','apartamento'], 'Home'],
+  [['luz','energia','energía','electricidad','epm','codensa','enel','afinia','air-e',
+    'celsia','electrica','eléctrica'], 'Lightbulb'],
+  [['agua','acueducto','alcantarillado','triple a','eaab','veolia'], 'Droplet'],
+  [['gas natural','vanti','surtigas','llanogas','propano'], 'Flame'],
+  [['aseo','basura','reciclaje'], 'Recycle'],
+  [['mantenimiento','reparacion','reparación','plomer','tecnico','técnico'], 'Wrench'],
+  [['rappi','ifood','didi food','domicilio','mercado','supermercado','exito','éxito',
+    'd1','ara','jumbo','olimpica','olímpica','carulla','despensa'], 'ShoppingCart'],
+  [['restaurante','almuerzo','comida','pizza','domino','mcdonald','kfc','burger'], 'Utensils'],
+  [['cafe','café','starbucks','juan valdez','tostao'], 'Coffee'],
+  [['amazon','mercadolibre','mercado libre','temu','shein','aliexpress','envio','envío',
+    'paquete'], 'Package'],
+  [['uber','didi','cabify','indriver','taxi','beat'], 'Car'],
+  [['transmilenio','metro','bus','sitp','pasaje','transporte publico',
+    'transporte público','tarjeta civica','cívica'], 'Bus'],
+  [['gasolina','combustible','terpel','biomax','primax','ecopetrol','peaje'], 'Fuel'],
+  [['bici','bicicleta','patineta','scooter'], 'Bike'],
+  [['vuelo','avion','avión','tiquete','avianca','latam','wingo','viva','viaje','hotel',
+    'airbnb','booking'], 'Plane'],
+  [['mascota','perro','gato','veterinaria','purina','agrocampo'], 'PawPrint'],
+  [['bebe','bebé','pañal','panal','guarderia','guardería','jardin infantil'], 'Baby'],
+  [['peluqueria','peluquería','barberia','barbería','estetica','estética','uñas','unas',
+    'spa','manicure'], 'Scissors'],
+  [['ropa','lavanderia','lavandería','tintoreria','zapatos'], 'Shirt'],
+  [['tarjeta de credito','tarjeta de crédito','cuota manejo','cuota de manejo','banco',
+    'bancolombia','davivienda','nequi','daviplata','nu ','lulo'], 'CreditCard'],
+  [['prestamo','préstamo','credito','crédito','deuda','financiacion','financiación'], 'Landmark'],
+  [['salario','sueldo','nomina','nómina','pago cliente','honorarios','freelance',
+    'quincena'], 'Coins'],
+  [['impuesto','dian','predial','vehiculo','vehículo','declaracion','declaración','multa'], 'Receipt'],
+  [['donacion','donación','iglesia','diezmo','fundacion','fundación','apoyo'], 'Heart'],
+  [['membresia','membresía','club','gremio','cuota social','sindicato'], 'Users'],
+  [['parqueadero','parqueo','garaje'], 'Building2'],
+];
+
+function guessSubscriptionIcon(name, fallback = 'Repeat') {
+  const s = normalizeGuessText(name).trim();
+  if (!s) return fallback;
+  for (const [keywords, icon] of SUBSCRIPTION_ICON_RULES) {
+    if (keywords.some(k => s.includes(k))) return icon;
+  }
+  return fallback;
+}
 
 const DEBT_TYPES = [
   { value: 'loan', label: 'Préstamo', icon: 'Landmark' },
@@ -452,47 +573,121 @@ function calculateNextDate(dateStr, frequency, dayOfMonth) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-function processRecurringTransactions(data) {
-  const today = todayISO();
-  let newTransactions = [...data.transactions];
-  const updatedRecurring = (data.recurringTransactions || []).map(rec => {
-    if (!rec.active) return rec;
-    if (rec.endDate && rec.endDate < today) return { ...rec, active: false };
-
-    let nextDate = rec.nextDueDate || rec.startDate;
-    const generated = [];
-
-    while (nextDate <= today) {
-      generated.push({
-        id: uid(),
-        createdAt: Date.now(),
-        type: rec.type,
-        amount: rec.amount,
-        category: rec.category,
-        accountId: rec.accountId,
-        date: nextDate,
-        note: rec.note ? `${rec.note} (recurrente)` : '(recurrente)',
-        recurringId: rec.id
-      });
-      nextDate = calculateNextDate(nextDate, rec.frequency, rec.dayOfMonth);
-    }
-
-    if (generated.length) newTransactions = [...newTransactions, ...generated];
-    return generated.length ? { ...rec, nextDueDate: nextDate, lastGeneratedDate: today } : rec;
-  });
-
-  return {
-    ...data,
-    transactions: newTransactions,
-    recurringTransactions: updatedRecurring
-  };
-}
-
 function daysUntil(dateStr) {
   if (!dateStr) return null;
   const today = new Date(); today.setHours(0,0,0,0);
   const d = new Date(dateStr + 'T00:00:00');
   return Math.ceil((d - today) / 86400000);
+}
+
+/* ---------------------- RECURRENTES: pendientes por confirmar ---------------------- */
+// Los pagos recurrentes ya NO se generan solos. `nextDueDate` es un cursor que
+// solo avanza cuando el usuario confirma, ajusta u omite una ocurrencia — así que
+// "pendiente" siempre se DERIVA de los datos, nunca se guarda aparte. Esto hace
+// imposibles (en vez de bugs a cazar) los duplicados entre recargas, las filas
+// huérfanas al borrar/editar un recurrente, o las filas obsoletas al restaurar
+// un backup.
+const MAX_OCCURRENCE_SCAN = 400; // guarda de loop (recurrente diario, ~13 meses atrás)
+
+// Índice de "esta ocurrencia ya tiene un pago registrado", construido una vez por
+// llamada. El fallback a tx.date cubre transacciones auto-generadas antes de este
+// cambio, que nunca tuvieron recurringDueDate.
+function buildRecurringTxIndex(transactions) {
+  const s = new Set();
+  (transactions || []).forEach(tx => {
+    if (tx.recurringId) s.add(`${tx.recurringId}|${tx.recurringDueDate || tx.date}`);
+  });
+  return s;
+}
+function isOccurrenceRecorded(recId, dueDate, txIndex) {
+  return txIndex.has(`${recId}|${dueDate}`);
+}
+
+function pendingOccurrenceDates(rec, today) {
+  if (!rec || !rec.active) return [];
+  let d = rec.nextDueDate || rec.startDate;
+  if (!d) return [];
+  const out = [];
+  let guard = 0;
+  while (d <= today && guard++ < MAX_OCCURRENCE_SCAN) {
+    if (rec.endDate && d > rec.endDate) break;
+    out.push(d);
+    d = calculateNextDate(d, rec.frequency, rec.dayOfMonth);
+  }
+  return out;
+}
+
+function getPendingPayments(data) {
+  const today = todayISO();
+  const txIndex = buildRecurringTxIndex(data.transactions);
+  const out = [];
+  (data.recurringTransactions || []).forEach(rec => {
+    const skipped = rec.skippedDates || [];
+    pendingOccurrenceDates(rec, today).forEach(dueDate => {
+      if (skipped.includes(dueDate)) return;
+      if (isOccurrenceRecorded(rec.id, dueDate, txIndex)) return;
+      out.push({ key: `${rec.id}|${dueDate}`, rec, dueDate, days: daysUntil(dueDate) });
+    });
+  });
+  return out.sort((a,b) => a.dueDate.localeCompare(b.dueDate));
+}
+
+// Próxima fecha de vencimiento en el futuro (o null si ya terminó). Con el cursor
+// "estacionado" en la ocurrencia pendiente más vieja, rec.nextDueDate puede estar
+// en el pasado — cualquier UI que pregunte "¿cuándo vence?" debe usar esto.
+function nextFutureDueDate(rec) {
+  const today = todayISO();
+  let d = rec.nextDueDate || rec.startDate;
+  let guard = 0;
+  while (d && d <= today && guard++ < MAX_OCCURRENCE_SCAN) {
+    d = calculateNextDate(d, rec.frequency, rec.dayOfMonth);
+  }
+  if (rec.endDate && d > rec.endDate) return null;
+  return d;
+}
+
+function dueLabel(dateStr) {
+  const n = daysUntil(dateStr);
+  if (n === null) return '';
+  if (n === 0) return 'vence hoy';
+  if (n === 1) return 'vence mañana';
+  if (n === -1) return 'venció ayer';
+  if (n > 30) return `vence el ${formatDayHeader(dateStr)}`;
+  if (n > 1) return `en ${n} días`;
+  return `venció hace ${Math.abs(n)} días`;
+}
+
+// Normaliza y reconcilia recurrentes — reemplaza al antiguo
+// processRecurringTransactions. Ya NO crea transacciones: solo rellena defaults
+// para registros viejos y avanza el cursor sobre ocurrencias ya cubiertas por una
+// transacción auto-generada antes de este cambio (o ya omitidas), para que a un
+// usuario existente no se le vuelva a proponer su propia historia. Es idempotente
+// — corre en cada carga sin efectos acumulativos.
+function reconcileRecurring(data) {
+  const today = todayISO();
+  const txIndex = buildRecurringTxIndex(data.transactions);
+  const recurringTransactions = (data.recurringTransactions || []).map(rec => {
+    const r = { ...rec };
+    if (!r.nextDueDate) r.nextDueDate = r.startDate || today;
+    if (!r.frequency) r.frequency = 'monthly';
+    if (r.active === undefined) r.active = true;
+    if (!Array.isArray(r.skippedDates)) r.skippedDates = [];
+    if (r.name === undefined || r.name === null) r.name = (r.note || '').trim();
+    if (!r.icon) { r.icon = guessSubscriptionIcon(r.name); r.iconManual = false; }
+    if (r.iconManual === undefined) r.iconManual = false;
+
+    if (r.active && r.endDate && r.endDate < today) r.active = false;
+
+    let guard = 0;
+    while (r.nextDueDate <= today && guard++ < MAX_OCCURRENCE_SCAN &&
+           (r.skippedDates.includes(r.nextDueDate) ||
+            isOccurrenceRecorded(r.id, r.nextDueDate, txIndex))) {
+      r.nextDueDate = calculateNextDate(r.nextDueDate, r.frequency, r.dayOfMonth);
+    }
+    return r;
+  });
+
+  return { ...data, recurringTransactions }; // no toca data.transactions
 }
 
 function getGoalStats(goal) {
@@ -557,9 +752,17 @@ function checkNotifications(data, setData) {
 
   if (notif.upcomingPayments) {
     const tomorrow = isoDate(new Date(Date.now() + 86400000));
-    (recurringTransactions || []).filter(r=>r.active && r.nextDueDate === tomorrow).forEach(rec => {
-      new Notification('Pago próximo', { body: `Mañana vence: ${rec.note || 'movimiento recurrente'} (${formatMoney(rec.amount, data.settings.currency)})` });
+    (recurringTransactions || []).filter(r=>r.active && nextFutureDueDate(r) === tomorrow).forEach(rec => {
+      new Notification('Pago próximo', { body: `Mañana vence: ${rec.name || rec.note || 'movimiento recurrente'} (${formatMoney(rec.amount, data.settings.currency)})` });
     });
+    const pend = getPendingPayments(data).filter(p => p.days <= 0);
+    if (pend.length) {
+      new Notification('Pagos por confirmar', {
+        body: pend.length === 1
+          ? `¿Ya pagaste ${pend[0].rec.name || pend[0].rec.note || 'tu recurrente'}?`
+          : `Tienes ${pend.length} pagos recurrentes sin confirmar.`
+      });
+    }
   }
 
   setData(d => ({ ...d, settings: { ...d.settings, notifications: { ...d.settings.notifications, lastCheckedDate: today } } }));
@@ -596,6 +799,7 @@ function ProgressBar({ percent, color, track }) {
 }
 
 function SegmentedControl({ options, value, onChange, t }) {
+  const compact = options.length > 4;
   return (
     <div style={{ display: 'flex', background: t.surfaceAlt, borderRadius: 10, padding: 3, border: `1px solid ${t.border}` }}>
       {options.map(opt => (
@@ -604,10 +808,10 @@ function SegmentedControl({ options, value, onChange, t }) {
           onClick={() => onChange(opt.value)}
           className="fz-seg-btn"
           style={{
-            flex: 1, padding: '9px 10px', borderRadius: 8, border: 'none', cursor: 'pointer',
+            flex: 1, padding: compact ? '9px 4px' : '9px 10px', borderRadius: 8, border: 'none', cursor: 'pointer',
             background: value === opt.value ? t.accent : 'transparent',
             color: value === opt.value ? t.accentText : t.textMuted,
-            fontWeight: 600, fontSize: 13.5, fontFamily: 'var(--font-body)', transition: 'all .2s ease'
+            fontWeight: 600, fontSize: compact ? 12 : 13.5, fontFamily: 'var(--font-body)', transition: 'all .2s ease'
           }}
         >
           {opt.label}
@@ -665,8 +869,9 @@ const BALANCE_VIEWS = [
   { value: 'year', label: 'Año' },
 ];
 
-function InicioScreen({ data, setData, t, goHistorial, openSheet, onQuickAdd, onNavigate, balanceHidden, setBalanceHidden }) {
+function InicioScreen({ data, setData, t, goHistorial, openSheet, onQuickAdd, onNavigate, balanceHidden, setBalanceHidden, onOpenModal, onConfirmRecurring, onAdjustRecurring, onSkipRecurring, onUnsubscribeRecurring }) {
   const { transactions, categories, settings, accounts, recurringTransactions, debts, savingsGoals, budgets, receivables } = data;
+  const [snoozed, setSnoozed] = useState(() => new Set());
   const now = new Date();
   const curMonthKey = `${now.getFullYear()}-${pad(now.getMonth()+1)}`;
   const balanceView = settings.homeBalanceView || 'total';
@@ -702,9 +907,12 @@ function InicioScreen({ data, setData, t, goHistorial, openSheet, onQuickAdd, on
     return { cat, pct, spent, limit };
   }).filter(Boolean).sort((a,b)=>b.pct-a.pct);
 
+  const pending = useMemo(() => getPendingPayments(data), [data.recurringTransactions, data.transactions]);
   const upcoming = (recurringTransactions || [])
     .filter(r => r.active)
-    .sort((a,b)=> a.nextDueDate.localeCompare(b.nextDueDate))
+    .map(r => ({ rec: r, due: nextFutureDueDate(r) }))
+    .filter(x => !!x.due)
+    .sort((a,b)=> (a.due||'9999-12-31').localeCompare(b.due||'9999-12-31'))
     .slice(0, 5);
 
   const byCategory = {};
@@ -873,19 +1081,46 @@ function InicioScreen({ data, setData, t, goHistorial, openSheet, onQuickAdd, on
           </div>
         )}
 
+        {/* Por confirmar */}
+        {pending.length > 0 && (
+          <div style={{ marginTop: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 600, color: t.text }}>Por confirmar</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: t.expense, background: t.expense+'22', borderRadius: 10, padding: '1px 7px' }}>{pending.length}</div>
+              <div style={{ flex: 1 }} />
+              <button onClick={()=>onNavigate('presupuestos','subs')} className="fz-link-btn" style={{ color: t.accent }}>Ver todos</button>
+            </div>
+            <div style={{ background: t.glow ? t.surface + 'CC' : t.surface, border: `1px solid ${t.expense}55`, borderRadius: t.glow ? 20 : 16, padding: '0 16px', backdropFilter: t.glow ? 'blur(10px)' : undefined, WebkitBackdropFilter: t.glow ? 'blur(10px)' : undefined }}>
+              {pending.slice(0,3).map((p,i)=>(
+                <div key={p.key} style={{ borderTop: i===0?'none':`1px solid ${t.border}` }}>
+                  <PendingPaymentRow t={t} settings={settings} categories={categories} p={p}
+                    onConfirm={onConfirmRecurring} onAdjust={onAdjustRecurring} onSkip={onSkipRecurring} onUnsubscribe={onUnsubscribeRecurring}
+                    snoozed={snoozed.has(p.key)}
+                    onSnooze={()=>setSnoozed(s=>{ const next = new Set(s); next.has(p.key) ? next.delete(p.key) : next.add(p.key); return next; })} />
+                </div>
+              ))}
+              {pending.length > 3 && (
+                <div style={{ padding: '10px 0', textAlign: 'center', borderTop: `1px solid ${t.border}` }}>
+                  <button onClick={()=>onNavigate('presupuestos','subs')} className="fz-link-btn" style={{ color: t.textMuted }}>+{pending.length-3} más</button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Próximos pagos */}
         {upcoming.length > 0 && (
           <div style={{ marginTop: 16 }}>
             <div style={{ fontSize: 13.5, fontWeight: 600, color: t.text, marginBottom: 8 }}>Próximos pagos</div>
             <div style={{ background: t.glow ? t.surface + 'CC' : t.surface, border: `1px solid ${t.border}`, borderRadius: t.glow ? 20 : 16, overflow: 'hidden', backdropFilter: t.glow ? 'blur(10px)' : undefined, WebkitBackdropFilter: t.glow ? 'blur(10px)' : undefined }}>
-              {upcoming.map((rec,i)=>{
+              {upcoming.map(({rec, due},i)=>{
                 const cat = categories.find(c=>c.id===rec.category);
                 return (
                   <div key={rec.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderTop: i===0?'none':`1px solid ${t.border}` }}>
-                    <CategoryBadge cat={cat} t={t} size={30} />
+                    <CategoryBadge cat={{ icon: rec.icon || cat?.icon || 'Repeat', color: cat?.color || t.textMuted }} t={t} size={30} />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, color: t.text, fontWeight: 500, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{rec.note || (cat ? cat.name : 'Otros')}</div>
-                      <div style={{ fontSize: 11, color: t.textMuted }}>{rec.nextDueDate}</div>
+                      <div style={{ fontSize: 13, color: t.text, fontWeight: 500, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{rec.name || rec.note || (cat ? cat.name : 'Otros')}</div>
+                      <div style={{ fontSize: 11, color: t.textMuted }}>{dueLabel(due)}</div>
                     </div>
                     <div style={{ fontSize: 13, fontWeight: 700, color: rec.type==='income'?t.income:t.expense }}>
                       {rec.type==='income'?'+':'-'}{formatMoney(rec.amount, settings.currency)}
@@ -1380,16 +1615,168 @@ function ReceivablesContent({ data, t, onOpenModal }) {
   );
 }
 
+/* ---------------------------------- SUSCRIPCIONES / PAGOS RECURRENTES ---------------------------------- */
+const MONTHLY_FACTOR = { daily: 365/12, weekly: 52/12, biweekly: 26/12, monthly: 1, bimonthly: 1/2, quarterly: 1/3, yearly: 1/12 };
+function monthlyEquivalent(rec) { return (Number(rec.amount) || 0) * (MONTHLY_FACTOR[rec.frequency] ?? 1); }
+
+function PendingPaymentRow({ t, settings, categories, p, onConfirm, onAdjust, onSkip, onUnsubscribe, snoozed, onSnooze }) {
+  const { rec, dueDate, days } = p;
+  const cat = categories.find(c=>c.id===rec.category);
+  const dateColor = days < 0 ? t.expense : days === 0 ? t.text : t.textMuted;
+  const [confirmingUnsub, setConfirmingUnsub] = useState(false);
+
+  if (snoozed) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0' }}>
+        <CategoryBadge cat={{ icon: rec.icon || cat?.icon || 'Repeat', color: cat?.color || t.textMuted }} t={t} size={28} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 12.5, color: t.text, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{rec.name || rec.note || 'Recurrente'}</div>
+          <div style={{ fontSize: 11, color: t.textMuted }}>Aún no confirmado</div>
+        </div>
+        <button onClick={onSnooze} className="fz-link-btn" style={{ color: t.accent }}>Confirmar</button>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ padding: '12px 0' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+        <CategoryBadge cat={{ icon: rec.icon || cat?.icon || 'Repeat', color: cat?.color || t.textMuted }} t={t} size={30} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13, color: t.text, fontWeight: 500, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{rec.name || rec.note || 'Recurrente'}</div>
+          <div style={{ fontSize: 11, color: dateColor, fontWeight: days<0 ? 700 : 400 }}>{dueLabel(dueDate)}</div>
+        </div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: rec.type==='income'?t.income:t.expense }}>
+          {rec.type==='income'?'+':'-'}{formatMoney(rec.amount, settings.currency)}
+        </div>
+      </div>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+        <button onClick={()=>onConfirm(rec, dueDate)}
+          style={{ flex: 1, padding: '9px', borderRadius: 10, border: 'none', background: t.accent, color: t.accentText, fontWeight: 700, fontSize: 12.5, cursor: 'pointer' }}>
+          Ya lo pagué
+        </button>
+        <button onClick={()=>onAdjust(rec, dueDate)}
+          style={{ padding: '9px 14px', borderRadius: 10, border: `1px solid ${t.border}`, background: 'transparent', color: t.text, fontWeight: 600, fontSize: 12.5, cursor: 'pointer' }}>
+          Ajustar
+        </button>
+      </div>
+      <div style={{ display: 'flex', gap: 14, fontSize: 11.5, flexWrap: 'wrap' }}>
+        {onSnooze && <button onClick={onSnooze} className="fz-link-btn" style={{ color: t.textMuted }}>Aún no</button>}
+        <button onClick={()=>onSkip(rec.id, dueDate)} className="fz-link-btn" style={{ color: t.textMuted }}>Omitir</button>
+        {confirmingUnsub ? (
+          <button onClick={()=>{ onUnsubscribe(rec.id); setConfirmingUnsub(false); }} className="fz-link-btn" style={{ color: t.expense }}>¿Seguro? Sí, darme de baja</button>
+        ) : (
+          <button onClick={()=>setConfirmingUnsub(true)} className="fz-link-btn" style={{ color: t.textMuted }}>Me di de baja</button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SuscripcionesContent({ data, t, onOpenModal, onConfirm, onAdjust, onSkip, onUnsubscribe, onReactivate }) {
+  const { recurringTransactions, categories, settings } = data;
+  const recs = recurringTransactions || [];
+  const pending = useMemo(() => getPendingPayments(data), [data.recurringTransactions, data.transactions]);
+  const activeExpense = recs.filter(r=>r.active && r.type==='expense');
+  const activeIncome = recs.filter(r=>r.active && r.type==='income');
+  const monthlyTotal = activeExpense.reduce((s,r)=>s+monthlyEquivalent(r),0);
+  const incomeMonthlyTotal = activeIncome.reduce((s,r)=>s+monthlyEquivalent(r),0);
+  const pendingByRec = {};
+  pending.forEach(p=>{ pendingByRec[p.rec.id] = (pendingByRec[p.rec.id]||0)+1; });
+  const sorted = [...recs].sort((a,b)=> (b.active?1:0)-(a.active?1:0));
+
+  return (
+    <div style={{ padding: '0 20px' }}>
+      {recs.length > 0 && (
+        <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 16, padding: '16px 18px', marginBottom: 16 }}>
+          <div style={{ fontSize: 11.5, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Te cuestan al mes</div>
+          <div style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 22, color: t.expense, fontWeight: 600, marginTop: 3 }}>{formatMoney(monthlyTotal, settings.currency)}</div>
+          <div style={{ fontSize: 11.5, color: t.textMuted, marginTop: 3 }}>
+            ≈ {formatMoney(monthlyTotal*12, settings.currency)} al año · {activeExpense.length} activa{activeExpense.length===1?'':'s'}
+          </div>
+          {incomeMonthlyTotal > 0 && (
+            <div style={{ fontSize: 11.5, color: t.income, marginTop: 3 }}>Ingresos recurrentes: {formatMoney(incomeMonthlyTotal, settings.currency)}/mes</div>
+          )}
+        </div>
+      )}
+
+      {pending.length > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 13.5, fontWeight: 600, color: t.text, marginBottom: 8 }}>Por confirmar</div>
+          <div style={{ background: t.surface, border: `1px solid ${t.expense}55`, borderRadius: 16, padding: '0 16px' }}>
+            {pending.map((p,i)=>(
+              <div key={p.key} style={{ borderTop: i===0?'none':`1px solid ${t.border}` }}>
+                <PendingPaymentRow t={t} settings={settings} categories={categories} p={p}
+                  onConfirm={onConfirm} onAdjust={onAdjust} onSkip={onSkip} onUnsubscribe={onUnsubscribe} />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {recs.length === 0 ? (
+        <EmptyState t={t} text="Aún no tienes pagos recurrentes." onAction={()=>onOpenModal({ type: 'recurring' })} actionLabel="Agregar recurrente" />
+      ) : sorted.map(rec => {
+        const cat = categories.find(c=>c.id===rec.category);
+        const pendingCount = pendingByRec[rec.id] || 0;
+        const freqLabel = FREQUENCIES.find(f=>f.value===rec.frequency)?.label;
+        const monthly = monthlyEquivalent(rec);
+        return (
+          <div key={rec.id} style={{ background: t.surface, border: `1px solid ${pendingCount>0 ? t.expense+'55' : t.border}`, borderRadius: 16, padding: '14px 16px', marginBottom: 12, opacity: rec.active ? 1 : 0.5 }}>
+            <div onClick={()=>onOpenModal({ type: 'recurring', recurring: rec })} style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
+              <CategoryBadge cat={{ icon: rec.icon || cat?.icon || 'Repeat', color: cat?.color || t.textMuted }} t={t} size={34} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, color: t.text, fontWeight: 600, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{rec.name || rec.note || cat?.name || 'Recurrente'}</div>
+                <div style={{ fontSize: 11.5, color: t.textMuted }}>
+                  {freqLabel}{rec.frequency!=='monthly' ? ` · ${formatMoney(monthly, settings.currency)}/mes` : ''}
+                </div>
+                {pendingCount > 0 ? (
+                  <div style={{ fontSize: 11.5, color: t.expense, display:'flex', alignItems:'center', gap: 4, marginTop: 2 }}>
+                    <Icon name="AlertTriangle" size={12} color={t.expense} /> {pendingCount} pago{pendingCount===1?'':'s'} sin confirmar
+                  </div>
+                ) : rec.active ? (
+                  <div style={{ fontSize: 11.5, color: t.textMuted, marginTop: 2 }}>Próximo: {dueLabel(nextFutureDueDate(rec))}</div>
+                ) : (
+                  <div style={{ fontSize: 11.5, color: t.textMuted, marginTop: 2, display:'flex', alignItems:'center', gap: 6 }}>
+                    Dada de baja
+                    <button onClick={(e)=>{ e.stopPropagation(); onReactivate(rec.id); }} className="fz-link-btn" style={{ color: t.accent }}>Reactivar</button>
+                  </div>
+                )}
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: rec.type==='income'?t.income:t.expense }}>
+                {rec.type==='income'?'+':'-'}{formatMoney(rec.amount, settings.currency)}
+              </div>
+            </div>
+            {pendingCount > 3 && (
+              <button onClick={()=>{ pending.filter(p=>p.rec.id===rec.id).forEach(p=>onSkip(rec.id, p.dueDate)); }}
+                style={{ width: '100%', marginTop: 10, padding: '8px', borderRadius: 10, border: 'none', background: t.accent, color: t.accentText, fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
+                Ponerme al día
+              </button>
+            )}
+          </div>
+        );
+      })}
+      <button onClick={()=>onOpenModal({ type: 'recurring' })}
+        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: t.surfaceAlt, border: `1px dashed ${t.border}`, borderRadius: 12, padding: '11px', color: t.accent, fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 16 }}>
+        <Icon name="Plus" size={14} color={t.accent} /> Nueva recurrente
+      </button>
+    </div>
+  );
+}
+
 /* ---------------------------------- METAS (contenedor con sub-tabs) ---------------------------------- */
-function MetasScreen({ data, t, subTab, setSubTab, onEditBudget, onOpenModal }) {
+function MetasScreen({ data, t, subTab, setSubTab, onEditBudget, onOpenModal, onConfirmRecurring, onAdjustRecurring, onSkipRecurring, onUnsubscribeRecurring, onReactivateRecurring }) {
   return (
     <div>
       <TopBar title="Metas" t={t} />
       <div style={{ padding: '0 20px', marginBottom: 16 }}>
         <SegmentedControl t={t} value={subTab} onChange={setSubTab}
-          options={[{value:'budgets',label:'Límites'},{value:'goals',label:'Ahorro'},{value:'debts',label:'Deudas'},{value:'receivables',label:'Cobrar'}]} />
+          options={[{value:'budgets',label:'Límites'},{value:'subs',label:'Suscrip.'},{value:'goals',label:'Ahorro'},{value:'debts',label:'Deudas'},{value:'receivables',label:'Cobrar'}]} />
       </div>
       {subTab === 'budgets' && <PresupuestosContent data={data} t={t} onEditBudget={onEditBudget} />}
+      {subTab === 'subs' && <SuscripcionesContent data={data} t={t} onOpenModal={onOpenModal}
+        onConfirm={onConfirmRecurring} onAdjust={onAdjustRecurring} onSkip={onSkipRecurring}
+        onUnsubscribe={onUnsubscribeRecurring} onReactivate={onReactivateRecurring} />}
       {subTab === 'goals' && <SavingsGoalsContent data={data} t={t} onOpenModal={onOpenModal} />}
       {subTab === 'debts' && <DebtsContent data={data} t={t} onOpenModal={onOpenModal} />}
       {subTab === 'receivables' && <ReceivablesContent data={data} t={t} onOpenModal={onOpenModal} />}
@@ -1879,13 +2266,17 @@ function AjustesScreen({ data, setData, t, onOpenModal }) {
           <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 14, overflow: 'hidden', marginBottom: 10 }}>
             {recurringTransactions.map((rec,i)=>{
               const cat = categories.find(c=>c.id===rec.category);
+              const pendingCount = getPendingPayments(data).filter(p=>p.rec.id===rec.id).length;
               return (
                 <div key={rec.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderTop: i===0?'none':`1px solid ${t.border}`, opacity: rec.active ? 1 : 0.5 }}>
                   <button onClick={()=>onOpenModal({ type: 'recurring', recurring: rec })} style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0, background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left', padding: 0 }}>
-                    <CategoryBadge cat={cat} t={t} size={28} />
+                    <CategoryBadge cat={{ icon: rec.icon || cat?.icon || 'Repeat', color: cat?.color || t.textMuted }} t={t} size={28} />
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, color: t.text, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{rec.note || (cat ? cat.name : 'Otros')}</div>
-                      <div style={{ fontSize: 11, color: t.textMuted }}>{FREQUENCIES.find(f=>f.value===rec.frequency)?.label} · Próx. {rec.nextDueDate}</div>
+                      <div style={{ fontSize: 13, color: t.text, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{rec.name || rec.note || (cat ? cat.name : 'Otros')}</div>
+                      <div style={{ fontSize: 11, color: t.textMuted }}>
+                        {FREQUENCIES.find(f=>f.value===rec.frequency)?.label} · Próx. {dueLabel(nextFutureDueDate(rec))}
+                        {pendingCount > 0 && <span style={{ color: t.expense }}> · {pendingCount} sin confirmar</span>}
+                      </div>
                     </div>
                     <div style={{ fontSize: 13, fontWeight: 700, color: rec.type==='income'?t.income:t.expense, marginRight: 4 }}>
                       {rec.type==='income'?'+':'-'}{formatMoney(rec.amount, settings.currency)}
@@ -2449,6 +2840,9 @@ function AccountModal({ t, settings, initial, onSave, onArchive, onClose }) {
 function RecurringModal({ t, categories, accounts, settings, initial, onSave, onDelete, onClose }) {
   const activeAccounts = accounts.filter(a=>!a.archived);
   const [type, setType] = useState(initial?.type || 'expense');
+  const [name, setName] = useState(initial?.name || initial?.note || '');
+  const [icon, setIcon] = useState(initial?.icon || guessSubscriptionIcon(initial?.name || initial?.note || ''));
+  const [iconManual, setIconManual] = useState(!!initial?.iconManual);
   const [amount, setAmount] = useState(initial?.amount ?? '');
   const [category, setCategory] = useState(initial?.category || '');
   const [accountId, setAccountId] = useState(initial?.accountId || activeAccounts[0]?.id || '');
@@ -2462,20 +2856,28 @@ function RecurringModal({ t, categories, accounts, settings, initial, onSave, on
   const filteredCats = categories.filter(c=>c.type===type);
   useEffect(() => { if (!filteredCats.find(c=>c.id===category)) setCategory(filteredCats[0]?.id || ''); }, [type]);
 
+  const onNameChange = (v) => { setName(v); if (!iconManual) setIcon(guessSubscriptionIcon(v)); };
+  const onPickIcon = (ic) => { setIcon(ic); setIconManual(true); };
+  const accentColor = filteredCats.find(c=>c.id===category)?.color || t.accent;
+
   const usesDayOfMonth = ['monthly','bimonthly','quarterly'].includes(frequency);
-  const canSave = Number(amount) > 0 && category && accountId && startDate;
+  const canSave = name.trim() && Number(amount) > 0 && category && accountId && startDate;
 
   const save = () => {
     if (!canSave) return;
     onSave({
       id: initial?.id || uid(),
-      type, amount: Number(amount), category, accountId, note: note.trim(),
+      type, name: name.trim(), icon, iconManual,
+      amount: Number(amount), category, accountId, note: note.trim(),
       frequency,
       startDate,
       endDate: hasEndDate && endDate ? endDate : null,
       dayOfMonth: usesDayOfMonth && dayOfMonth ? Number(dayOfMonth) : null,
       dayOfWeek: null,
+      skippedDates: initial?.skippedDates || [],
       lastGeneratedDate: initial?.lastGeneratedDate || null,
+      lastPaidDate: initial?.lastPaidDate || null,
+      unsubscribedAt: initial?.unsubscribedAt || null,
       active: initial ? initial.active : true,
       nextDueDate: initial?.nextDueDate || startDate
     });
@@ -2485,9 +2887,31 @@ function RecurringModal({ t, categories, accounts, settings, initial, onSave, on
     <ModalShell t={t} title={initial ? 'Editar recurrente' : 'Nueva recurrente'} onClose={onClose}>
       <SegmentedControl t={t} value={type} onChange={setType} options={[{value:'expense',label:'Gasto'},{value:'income',label:'Ingreso'}]} />
 
+      <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', margin: '14px 0 8px' }}>Nombre</div>
+      <input autoFocus value={name} onChange={e=>onNameChange(e.target.value)} placeholder="Netflix, gimnasio, arriendo…"
+        style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, marginBottom: 14, fontFamily: 'var(--font-body)', outline: 'none' }} />
+
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+        <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Ícono</div>
+        {iconManual && (
+          <button onClick={()=>{ setIconManual(false); setIcon(guessSubscriptionIcon(name)); }} className="fz-link-btn" style={{ color: t.accent }}>
+            Sugerir ícono
+          </button>
+        )}
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 6, maxHeight: 150, overflowY: 'auto', overscrollBehavior: 'contain', marginBottom: 14, padding: 4, borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt }}>
+        {SUBSCRIPTION_ICON_OPTIONS.map(ic=>(
+          <button key={ic} onClick={()=>onPickIcon(ic)}
+            style={{ aspectRatio: '1', borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+              border: `1px solid ${icon===ic ? accentColor : t.border}`, background: icon===ic ? accentColor+'22' : t.surface }}>
+            <Icon name={ic} size={16} color={icon===ic ? accentColor : t.textMuted} />
+          </button>
+        ))}
+      </div>
+
       <div style={{ textAlign: 'center', margin: '16px 0 14px' }}>
         <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Monto</div>
-        <MoneyInput autoFocus value={amount} onChange={setAmount} placeholder="0"
+        <MoneyInput value={amount} onChange={setAmount} placeholder="0"
           style={{ width: '100%', textAlign: 'center', fontFamily: 'Fraunces, Georgia, serif', fontSize: 30, color: type==='income'?t.income:t.expense, background: 'transparent', border: 'none', outline: 'none' }} />
       </div>
 
@@ -2826,6 +3250,54 @@ function DebtModal({ t, accounts, settings, initial, onSave, onDelete, onClose }
           {initial ? 'Guardar cambios' : 'Crear deuda'}
         </button>
       </div>
+    </ModalShell>
+  );
+}
+
+function AdjustPaymentModal({ t, accounts, rec, dueDate, onConfirm, onClose }) {
+  const activeAccounts = accounts.filter(a=>!a.archived);
+  const [amount, setAmount] = useState(rec.amount ?? '');
+  const [date, setDate] = useState(dueDate || todayISO());
+  const [accountId, setAccountId] = useState(rec.accountId || activeAccounts[0]?.id || '');
+  const canSave = Number(amount) > 0 && !!accountId && !!date;
+
+  const save = () => {
+    if (!canSave) return;
+    onConfirm({ amount: Number(amount), date, accountId });
+  };
+
+  return (
+    <ModalShell t={t} title={rec.name || rec.note || 'Ajustar pago'} onClose={onClose}>
+      <div style={{ fontSize: 12.5, color: t.textMuted, marginBottom: 14 }}>Programado para el {dueDate}</div>
+
+      <div style={{ textAlign: 'center', margin: '4px 0 14px' }}>
+        <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Monto pagado</div>
+        <MoneyInput autoFocus value={amount} onChange={setAmount} placeholder="0"
+          style={{ width: '100%', textAlign: 'center', fontFamily: 'Fraunces, Georgia, serif', fontSize: 30, color: rec.type==='income'?t.income:t.expense, background: 'transparent', border: 'none', outline: 'none' }} />
+      </div>
+
+      <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Fecha real del pago</div>
+      <input type="date" value={date} onChange={e=>setDate(e.target.value)}
+        style={{ width: '100%', marginBottom: 14, padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13, fontFamily: 'var(--font-body)' }} />
+
+      <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Cuenta</div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
+        {activeAccounts.map(a=>(
+          <button key={a.id} onClick={()=>setAccountId(a.id)}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px 7px 7px', borderRadius: 20, cursor: 'pointer',
+              border: `1px solid ${accountId===a.id ? a.color : t.border}`, background: accountId===a.id ? a.color+'22' : t.surfaceAlt }}>
+            <div style={{ width: 20, height: 20, borderRadius: 6, background: a.color+'33', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <Icon name={a.icon} size={12} color={a.color} />
+            </div>
+            <span style={{ fontSize: 12, color: t.text }}>{a.name}</span>
+          </button>
+        ))}
+      </div>
+
+      <button disabled={!canSave} onClick={save}
+        style={{ width: '100%', padding: '12px', borderRadius: 12, border: 'none', background: canSave?t.accent:t.surfaceAlt, color: canSave?t.accentText:t.textMuted, fontWeight: 700, fontSize: 13.5, cursor: canSave?'pointer':'not-allowed' }}>
+        Registrar pago
+      </button>
     </ModalShell>
   );
 }
@@ -3450,7 +3922,7 @@ function App() {
             merged = migrateV1toV2(merged);
           }
           merged = { ...merged, accounts: ensureDefaultAccounts(merged.accounts, merged.settings.currency) };
-          merged = processRecurringTransactions(merged);
+          merged = reconcileRecurring(merged);
           setData(merged);
           if (merged.settings.pin) setLocked(true);
         }
@@ -3494,6 +3966,73 @@ function App() {
 
   const closeModal = () => setModal({ type: null });
 
+  // "Ya lo pagué" (override=null) y "Ajustar" (override={amount,date,accountId})
+  // comparten esta función: crean el pago real solo cuando el usuario lo confirma.
+  const confirmRecurringPayment = (rec, dueDate, override) => {
+    const o = override || {};
+    setData(d => {
+      const cur = d.recurringTransactions.find(r => r.id === rec.id);
+      if (!cur) return d;
+      const txIndex = buildRecurringTxIndex(d.transactions);
+      if (isOccurrenceRecorded(cur.id, dueDate, txIndex)) return d; // idempotencia (doble tap)
+      if ((cur.skippedDates || []).includes(dueDate)) return d;
+
+      const amount = Number(o.amount != null && o.amount !== '' ? o.amount : cur.amount) || 0;
+      if (amount <= 0) return d;
+      const paidDate = o.date || dueDate;
+
+      const tx = {
+        id: uid(), createdAt: Date.now(), type: cur.type, amount,
+        category: cur.category, accountId: o.accountId || cur.accountId,
+        date: paidDate, note: (cur.name || cur.note || '').trim() || '(recurrente)',
+        recurringId: cur.id, recurringDueDate: dueDate, tags: []
+      };
+
+      return {
+        ...d,
+        transactions: [...d.transactions, tx],
+        recurringTransactions: d.recurringTransactions.map(r => r.id !== cur.id ? r : {
+          ...r,
+          // avanza el cursor solo si esta ocurrencia era la que estaba pendiente
+          nextDueDate: r.nextDueDate === dueDate
+            ? calculateNextDate(dueDate, r.frequency, r.dayOfMonth) : r.nextDueDate,
+          lastPaidDate: paidDate, lastGeneratedDate: todayISO()
+        })
+      };
+    });
+  };
+
+  // "Omitir": esta ocurrencia no se pagó y no se va a pagar (te la regalaron, te
+  // la reembolsaron, etc). Sin esto el cursor se queda pegado para siempre.
+  const skipRecurringOccurrence = (recId, dueDate) => setData(d => {
+    const today = todayISO();
+    const txIndex = buildRecurringTxIndex(d.transactions);
+    return { ...d, recurringTransactions: d.recurringTransactions.map(r => {
+      if (r.id !== recId) return r;
+      const skippedDates = Array.from(new Set([...(r.skippedDates || []), dueDate])).slice(-24);
+      let nextDueDate = r.nextDueDate, guard = 0;
+      while (nextDueDate <= today && guard++ < MAX_OCCURRENCE_SCAN &&
+             (skippedDates.includes(nextDueDate) || isOccurrenceRecorded(recId, nextDueDate, txIndex))) {
+        nextDueDate = calculateNextDate(nextDueDate, r.frequency, r.dayOfMonth);
+      }
+      return { ...r, skippedDates, nextDueDate };
+    })};
+  });
+
+  // "Me di de baja": los pendientes de este recurrente desaparecen solos
+  // (pendingOccurrenceDates devuelve [] si !active), sin necesidad de barrerlos.
+  const unsubscribeRecurring = (recId) => setData(d => ({ ...d,
+    recurringTransactions: d.recurringTransactions.map(r =>
+      r.id === recId ? { ...r, active: false, unsubscribedAt: todayISO() } : r) }));
+
+  const reactivateRecurring = (recId) => setData(d => ({ ...d,
+    recurringTransactions: d.recurringTransactions.map(r =>
+      r.id === recId ? { ...r, active: true, unsubscribedAt: null } : r) }));
+
+  // "Ya lo pagué" (un toque, sin overrides) y "Ajustar" (abre la hoja de detalle).
+  const onConfirmRecurringOneTap = (rec, dueDate) => confirmRecurringPayment(rec, dueDate, null);
+  const onAdjustRecurringOpen = (rec, dueDate) => setModal({ type: 'adjustRecurring', recurring: rec, dueDate });
+
   const fontBody = t.glow ? 'Optima, Candara, "Trebuchet MS", -apple-system, sans-serif' : 'Inter, -apple-system, sans-serif';
   const cssVars = {
     '--bg': t.bg, '--surface': t.surface, '--surfaceAlt': t.surfaceAlt, '--border': t.border,
@@ -3534,9 +4073,10 @@ function App() {
         ) : (
           <>
             <div style={{ paddingBottom: 84, minHeight: '100vh' }}>
-              {tab==='inicio' && <InicioScreen data={data} setData={setData} t={t} goHistorial={()=>setTab('historial')} openSheet={()=>setSheet({})} onQuickAdd={setQuickAddCat} onNavigate={goTo} balanceHidden={balanceHidden} setBalanceHidden={setBalanceHidden} />}
+              {tab==='inicio' && <InicioScreen data={data} setData={setData} t={t} goHistorial={()=>setTab('historial')} openSheet={()=>setSheet({})} onQuickAdd={setQuickAddCat} onNavigate={goTo} balanceHidden={balanceHidden} setBalanceHidden={setBalanceHidden} onOpenModal={setModal} onConfirmRecurring={onConfirmRecurringOneTap} onAdjustRecurring={onAdjustRecurringOpen} onSkipRecurring={skipRecurringOccurrence} onUnsubscribeRecurring={unsubscribeRecurring} />}
               {tab==='historial' && <HistorialScreen data={data} t={t} onEdit={(tx)=>setSheet(tx)} />}
-              {tab==='presupuestos' && <MetasScreen data={data} t={t} subTab={metasSubTab} setSubTab={setMetasSubTab} onEditBudget={(cat)=>setModal({ type: 'budget', cat })} onOpenModal={setModal} />}
+              {tab==='presupuestos' && <MetasScreen data={data} t={t} subTab={metasSubTab} setSubTab={setMetasSubTab} onEditBudget={(cat)=>setModal({ type: 'budget', cat })} onOpenModal={setModal}
+                onConfirmRecurring={onConfirmRecurringOneTap} onAdjustRecurring={onAdjustRecurringOpen} onSkipRecurring={skipRecurringOccurrence} onUnsubscribeRecurring={unsubscribeRecurring} onReactivateRecurring={reactivateRecurring} />}
               {tab==='reportes' && <ReportesScreen data={data} t={t} />}
               {tab==='ajustes' && <AjustesScreen data={data} setData={setData} t={t} onOpenModal={setModal} />}
             </div>
@@ -3610,8 +4150,13 @@ function App() {
             )}
             {modal.type === 'recurring' && (
               <RecurringModal t={t} categories={data.categories} accounts={data.accounts} settings={data.settings} initial={modal.recurring}
-                onSave={(rec)=>{ setData(d=>{ const exists = d.recurringTransactions.find(r=>r.id===rec.id); const recurringTransactions = exists ? d.recurringTransactions.map(r=>r.id===rec.id?rec:r) : [...d.recurringTransactions, rec]; return processRecurringTransactions({ ...d, recurringTransactions }); }); closeModal(); }}
+                onSave={(rec)=>{ setData(d=>{ const exists = d.recurringTransactions.find(r=>r.id===rec.id); const recurringTransactions = exists ? d.recurringTransactions.map(r=>r.id===rec.id?rec:r) : [...d.recurringTransactions, rec]; return reconcileRecurring({ ...d, recurringTransactions }); }); closeModal(); }}
                 onDelete={modal.recurring ? ()=>{ setData(d=>({ ...d, recurringTransactions: d.recurringTransactions.filter(r=>r.id!==modal.recurring.id) })); closeModal(); } : null}
+                onClose={closeModal} />
+            )}
+            {modal.type === 'adjustRecurring' && (
+              <AdjustPaymentModal t={t} accounts={data.accounts} rec={modal.recurring} dueDate={modal.dueDate}
+                onConfirm={(v)=>{ confirmRecurringPayment(modal.recurring, modal.dueDate, v); closeModal(); }}
                 onClose={closeModal} />
             )}
             {modal.type === 'goal' && (
@@ -3701,7 +4246,7 @@ function App() {
 
             {modal.type === 'importConfirm' && (
               <ImportConfirmModal t={t} importedData={modal.importedData}
-                onConfirm={()=>{ setData({ ...DEFAULT_DATA, ...modal.importedData, tags: modal.importedData.tags || [] }); closeModal(); }}
+                onConfirm={()=>{ setData(reconcileRecurring({ ...DEFAULT_DATA, ...modal.importedData, tags: modal.importedData.tags || [] })); closeModal(); }}
                 onClose={closeModal} />
             )}
 
