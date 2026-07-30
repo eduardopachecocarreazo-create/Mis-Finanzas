@@ -2614,12 +2614,13 @@ function ModalShell({ t, title, onClose, children }) {
 function QuickAddModal({ t, cat, accounts, settings, onSave, onClose }) {
   const activeAccounts = accounts.filter(a=>!a.archived);
   const [amount, setAmount] = useState('');
+  const [note, setNote] = useState('');
   const [accountId, setAccountId] = useState(activeAccounts[0]?.id || '');
   const canSave = Number(amount) > 0 && accountId;
 
   const save = () => {
     if (!canSave) return;
-    onSave({ id: uid(), createdAt: Date.now(), type: 'expense', amount: Number(amount), category: cat.id, date: todayISO(), note: '', accountId, tags: [] });
+    onSave({ id: uid(), createdAt: Date.now(), type: 'expense', amount: Number(amount), category: cat.id, date: todayISO(), note: note.trim(), accountId, tags: [] });
   };
 
   return (
@@ -2644,6 +2645,9 @@ function QuickAddModal({ t, cat, accounts, settings, onSave, onClose }) {
           ))}
         </div>
       )}
+
+      <input value={note} onChange={e=>setNote(e.target.value)} placeholder="Nota (opcional)"
+        style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13, marginBottom: 18, fontFamily: 'var(--font-body)', outline: 'none' }} />
 
       <button disabled={!canSave} onClick={save}
         style={{ width: '100%', padding: '13px', borderRadius: 12, border: 'none', background: canSave?t.accent:t.surfaceAlt, color: canSave?t.accentText:t.textMuted, fontWeight: 700, fontSize: 14, cursor: canSave?'pointer':'not-allowed' }}>
