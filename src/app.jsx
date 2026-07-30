@@ -239,6 +239,7 @@ const PRIORITY_FILTER_OPTIONS = [
   { value: 'none', label: 'Sin prio.' },
 ];
 function normalizePriority(p) { return (p === 1 || p === 2 || p === 3) ? p : null; }
+function isPaidOff(item) { return Number(item.currentBalance || 0) <= 0; }
 function groupByPriority(list) {
   const groups = { 1: [], 2: [], 3: [], none: [] };
   list.forEach(item => { groups[normalizePriority(item.priority) || 'none'].push(item); });
@@ -1570,32 +1571,37 @@ function SavingsGoalsContent({ data, t, onOpenModal }) {
 /* ---------------------------------- DEUDAS ---------------------------------- */
 function DebtCard({ debt, t, settings, onOpenModal }) {
   const stats = getDebtStats(debt);
+  const paidOff = isPaidOff(debt);
   return (
-    <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 16, padding: '14px 16px', marginBottom: 12 }}>
+    <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 16, padding: '14px 16px', marginBottom: 12, opacity: paidOff ? 0.6 : 1 }}>
       <div onClick={()=>onOpenModal({ type: 'debt', debt })} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10, cursor: 'pointer' }}>
         <CategoryBadge cat={{ icon: debt.icon, color: debt.color }} t={t} size={34} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{ fontSize: 14, color: t.text, fontWeight: 600 }}>{debt.name}</div>
-            <PriorityBadge priority={debt.priority} t={t} />
+            <div style={{ fontSize: 14, color: t.text, fontWeight: 600, textDecoration: paidOff ? 'line-through' : 'none' }}>{debt.name}</div>
+            {paidOff ? <div style={{ fontSize: 10, fontWeight: 700, color: t.textMuted, background: t.surfaceAlt, border: `1px solid ${t.border}`, borderRadius: 8, padding: '2px 7px' }}>Saldado</div> : <PriorityBadge priority={debt.priority} t={t} />}
           </div>
           <div style={{ fontSize: 11.5, color: t.textMuted }}>
-            {formatMoney(debt.currentBalance, settings.currency)} pendiente{debt.interestRate ? ` · ${debt.interestRate}% anual` : ''}
+            {paidOff ? 'Pagada por completo' : `${formatMoney(debt.currentBalance, settings.currency)} pendiente${debt.interestRate ? ` · ${debt.interestRate}% anual` : ''}`}
           </div>
           {debt.note && <div style={{ fontSize: 11.5, color: t.textMuted, fontStyle: 'italic', marginTop: 2 }}>{debt.note}</div>}
         </div>
         <div style={{ fontSize: 13, fontWeight: 700, color: t.income }}>{stats.percentPaid.toFixed(0)}%</div>
       </div>
-      <ProgressBar percent={stats.percentPaid} color={t.income} track={t.surfaceAlt} />
-      <div style={{ display: 'flex', gap: 12, marginTop: 10, fontSize: 11.5, color: t.textMuted, flexWrap: 'wrap' }}>
-        {debt.minimumPayment > 0 && <span>Cuota: {formatMoney(debt.minimumPayment, settings.currency)}/mes</span>}
-        {stats.monthsRemaining !== null && <span>{stats.monthsRemaining} meses restantes</span>}
-        {stats.totalInterest !== null && <span>≈{formatMoney(stats.totalInterest, settings.currency)} en intereses</span>}
-      </div>
-      <button onClick={()=>onOpenModal({ type: 'debtPayment', debt })}
-        style={{ width: '100%', marginTop: 12, padding: '9px', borderRadius: 10, border: 'none', background: t.accent, color: t.accentText, fontWeight: 700, fontSize: 12.5, cursor: 'pointer' }}>
-        Registrar pago
-      </button>
+      <ProgressBar percent={stats.percentPaid} color={paidOff ? t.textMuted : t.income} track={t.surfaceAlt} />
+      {!paidOff && (
+        <>
+          <div style={{ display: 'flex', gap: 12, marginTop: 10, fontSize: 11.5, color: t.textMuted, flexWrap: 'wrap' }}>
+            {debt.minimumPayment > 0 && <span>Cuota: {formatMoney(debt.minimumPayment, settings.currency)}/mes</span>}
+            {stats.monthsRemaining !== null && <span>{stats.monthsRemaining} meses restantes</span>}
+            {stats.totalInterest !== null && <span>≈{formatMoney(stats.totalInterest, settings.currency)} en intereses</span>}
+          </div>
+          <button onClick={()=>onOpenModal({ type: 'debtPayment', debt })}
+            style={{ width: '100%', marginTop: 12, padding: '9px', borderRadius: 10, border: 'none', background: t.accent, color: t.accentText, fontWeight: 700, fontSize: 12.5, cursor: 'pointer' }}>
+            Registrar pago
+          </button>
+        </>
+      )}
     </div>
   );
 }
@@ -1604,15 +1610,23 @@ function DebtsContent({ data, t, onOpenModal }) {
   const { debts, settings } = data;
   const [priorityFilter, setPriorityFilter] = useState('all');
   const totalDebt = debts.reduce((s,d)=>s+Number(d.currentBalance||0),0);
-  const hasPriorities = debts.some(d=>normalizePriority(d.priority));
-  const filtered = priorityFilter === 'all' ? debts : debts.filter(d => priorityFilter === 'none' ? !normalizePriority(d.priority) : normalizePriority(d.priority) === Number(priorityFilter));
-  const groups = groupByPriority(filtered);
+  const activeDebts = debts.filter(d=>!isPaidOff(d));
+  const paidOffDebts = debts.filter(d=>isPaidOff(d));
+  const hasPriorities = activeDebts.some(d=>normalizePriority(d.priority));
+  const showFilter = debts.length > 5 || paidOffDebts.length > 0;
+  const filterOptions = paidOffDebts.length > 0 ? [...PRIORITY_FILTER_OPTIONS, { value: 'saldado', label: 'Saldado' }] : PRIORITY_FILTER_OPTIONS;
+  const showActiveGroups = priorityFilter !== 'saldado';
+  const showPaidOffSection = priorityFilter === 'all' || priorityFilter === 'saldado';
+  const filteredActive = priorityFilter === 'all' || priorityFilter === 'saldado' ? activeDebts
+    : activeDebts.filter(d => priorityFilter === 'none' ? !normalizePriority(d.priority) : normalizePriority(d.priority) === Number(priorityFilter));
+  const groups = groupByPriority(filteredActive);
   const groupOrder = [
     { key: 1, label: PRIORITY_META[1].full, color: PRIORITY_META[1].color },
     { key: 2, label: PRIORITY_META[2].full, color: PRIORITY_META[2].color },
     { key: 3, label: PRIORITY_META[3].full, color: PRIORITY_META[3].color },
     { key: 'none', label: 'Sin prioridad', color: null },
   ];
+  const nothingToShow = (!showActiveGroups || filteredActive.length === 0) && !(showPaidOffSection && paidOffDebts.length > 0);
   return (
     <div style={{ padding: '0 20px' }}>
       {debts.length > 0 && (
@@ -1621,24 +1635,34 @@ function DebtsContent({ data, t, onOpenModal }) {
           <div style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 22, color: t.expense, fontWeight: 600, marginTop: 3 }}>{formatMoney(totalDebt, settings.currency)}</div>
         </div>
       )}
-      {debts.length > 5 && (
+      {showFilter && (
         <div style={{ marginBottom: 14 }}>
-          <SegmentedControl t={t} value={priorityFilter} onChange={setPriorityFilter} options={PRIORITY_FILTER_OPTIONS} />
+          <SegmentedControl t={t} value={priorityFilter} onChange={setPriorityFilter} options={filterOptions} />
         </div>
       )}
       {debts.length === 0 ? (
         <EmptyState t={t} text="No tienes deudas registradas." onAction={()=>onOpenModal({ type: 'debt' })} actionLabel="Registrar deuda" />
-      ) : filtered.length === 0 ? (
+      ) : nothingToShow ? (
         <div style={{ textAlign: 'center', padding: '24px 0', color: t.textMuted, fontSize: 13 }}>Ninguna deuda con este filtro.</div>
-      ) : hasPriorities ? (
-        groupOrder.map(g => groups[g.key].length > 0 && (
-          <div key={g.key}>
-            <PrioritySection label={g.label} color={g.color} t={t} />
-            {groups[g.key].map(debt => <DebtCard key={debt.id} debt={debt} t={t} settings={settings} onOpenModal={onOpenModal} />)}
-          </div>
-        ))
       ) : (
-        filtered.map(debt => <DebtCard key={debt.id} debt={debt} t={t} settings={settings} onOpenModal={onOpenModal} />)
+        <>
+          {showActiveGroups && (hasPriorities ? (
+            groupOrder.map(g => groups[g.key].length > 0 && (
+              <div key={g.key}>
+                <PrioritySection label={g.label} color={g.color} t={t} />
+                {groups[g.key].map(debt => <DebtCard key={debt.id} debt={debt} t={t} settings={settings} onOpenModal={onOpenModal} />)}
+              </div>
+            ))
+          ) : (
+            filteredActive.map(debt => <DebtCard key={debt.id} debt={debt} t={t} settings={settings} onOpenModal={onOpenModal} />)
+          ))}
+          {showPaidOffSection && paidOffDebts.length > 0 && (
+            <div>
+              <PrioritySection label="Saldado" color={null} t={t} />
+              {paidOffDebts.map(debt => <DebtCard key={debt.id} debt={debt} t={t} settings={settings} onOpenModal={onOpenModal} />)}
+            </div>
+          )}
+        </>
       )}
       <button onClick={()=>onOpenModal({ type: 'debt' })}
         style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: t.surfaceAlt, border: `1px dashed ${t.border}`, borderRadius: 12, padding: '11px', color: t.accent, fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 16 }}>
@@ -1650,25 +1674,28 @@ function DebtsContent({ data, t, onOpenModal }) {
 
 function ReceivableCard({ r, t, settings, onOpenModal }) {
   const stats = getReceivableStats(r);
+  const paidOff = isPaidOff(r);
   return (
-    <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 16, padding: '14px 16px', marginBottom: 12 }}>
+    <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 16, padding: '14px 16px', marginBottom: 12, opacity: paidOff ? 0.6 : 1 }}>
       <div onClick={()=>onOpenModal({ type: 'receivable', receivable: r })} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10, cursor: 'pointer' }}>
         <CategoryBadge cat={{ icon: r.icon, color: r.color }} t={t} size={34} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{ fontSize: 14, color: t.text, fontWeight: 600 }}>{r.name}</div>
-            <PriorityBadge priority={r.priority} t={t} />
+            <div style={{ fontSize: 14, color: t.text, fontWeight: 600, textDecoration: paidOff ? 'line-through' : 'none' }}>{r.name}</div>
+            {paidOff ? <div style={{ fontSize: 10, fontWeight: 700, color: t.textMuted, background: t.surfaceAlt, border: `1px solid ${t.border}`, borderRadius: 8, padding: '2px 7px' }}>Saldado</div> : <PriorityBadge priority={r.priority} t={t} />}
           </div>
-          <div style={{ fontSize: 11.5, color: t.textMuted }}>{formatMoney(r.currentBalance, settings.currency)} pendiente por cobrar</div>
+          <div style={{ fontSize: 11.5, color: t.textMuted }}>{paidOff ? 'Cobrado por completo' : `${formatMoney(r.currentBalance, settings.currency)} pendiente por cobrar`}</div>
           {r.note && <div style={{ fontSize: 11.5, color: t.textMuted, fontStyle: 'italic', marginTop: 2 }}>{r.note}</div>}
         </div>
         <div style={{ fontSize: 13, fontWeight: 700, color: t.income }}>{stats.percentCollected.toFixed(0)}%</div>
       </div>
-      <ProgressBar percent={stats.percentCollected} color={t.income} track={t.surfaceAlt} />
-      <button onClick={()=>onOpenModal({ type: 'receivablePayment', receivable: r })}
-        style={{ width: '100%', marginTop: 12, padding: '9px', borderRadius: 10, border: 'none', background: t.accent, color: t.accentText, fontWeight: 700, fontSize: 12.5, cursor: 'pointer' }}>
-        Registrar abono
-      </button>
+      <ProgressBar percent={stats.percentCollected} color={paidOff ? t.textMuted : t.income} track={t.surfaceAlt} />
+      {!paidOff && (
+        <button onClick={()=>onOpenModal({ type: 'receivablePayment', receivable: r })}
+          style={{ width: '100%', marginTop: 12, padding: '9px', borderRadius: 10, border: 'none', background: t.accent, color: t.accentText, fontWeight: 700, fontSize: 12.5, cursor: 'pointer' }}>
+          Registrar abono
+        </button>
+      )}
     </div>
   );
 }
@@ -1677,15 +1704,23 @@ function ReceivablesContent({ data, t, onOpenModal }) {
   const { receivables, settings } = data;
   const [priorityFilter, setPriorityFilter] = useState('all');
   const totalReceivable = (receivables||[]).reduce((s,r)=>s+Number(r.currentBalance||0),0);
-  const hasPriorities = receivables.some(r=>normalizePriority(r.priority));
-  const filtered = priorityFilter === 'all' ? receivables : receivables.filter(r => priorityFilter === 'none' ? !normalizePriority(r.priority) : normalizePriority(r.priority) === Number(priorityFilter));
-  const groups = groupByPriority(filtered);
+  const activeReceivables = receivables.filter(r=>!isPaidOff(r));
+  const paidOffReceivables = receivables.filter(r=>isPaidOff(r));
+  const hasPriorities = activeReceivables.some(r=>normalizePriority(r.priority));
+  const showFilter = receivables.length > 5 || paidOffReceivables.length > 0;
+  const filterOptions = paidOffReceivables.length > 0 ? [...PRIORITY_FILTER_OPTIONS, { value: 'saldado', label: 'Saldado' }] : PRIORITY_FILTER_OPTIONS;
+  const showActiveGroups = priorityFilter !== 'saldado';
+  const showPaidOffSection = priorityFilter === 'all' || priorityFilter === 'saldado';
+  const filteredActive = priorityFilter === 'all' || priorityFilter === 'saldado' ? activeReceivables
+    : activeReceivables.filter(r => priorityFilter === 'none' ? !normalizePriority(r.priority) : normalizePriority(r.priority) === Number(priorityFilter));
+  const groups = groupByPriority(filteredActive);
   const groupOrder = [
     { key: 1, label: PRIORITY_META[1].full, color: PRIORITY_META[1].color },
     { key: 2, label: PRIORITY_META[2].full, color: PRIORITY_META[2].color },
     { key: 3, label: PRIORITY_META[3].full, color: PRIORITY_META[3].color },
     { key: 'none', label: 'Sin prioridad', color: null },
   ];
+  const nothingToShow = (!showActiveGroups || filteredActive.length === 0) && !(showPaidOffSection && paidOffReceivables.length > 0);
   return (
     <div style={{ padding: '0 20px' }}>
       {receivables.length > 0 && (
@@ -1694,24 +1729,34 @@ function ReceivablesContent({ data, t, onOpenModal }) {
           <div style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 22, color: t.income, fontWeight: 600, marginTop: 3 }}>{formatMoney(totalReceivable, settings.currency)}</div>
         </div>
       )}
-      {receivables.length > 5 && (
+      {showFilter && (
         <div style={{ marginBottom: 14 }}>
-          <SegmentedControl t={t} value={priorityFilter} onChange={setPriorityFilter} options={PRIORITY_FILTER_OPTIONS} />
+          <SegmentedControl t={t} value={priorityFilter} onChange={setPriorityFilter} options={filterOptions} />
         </div>
       )}
       {receivables.length === 0 ? (
         <EmptyState t={t} text="No tienes cuentas por cobrar registradas." onAction={()=>onOpenModal({ type: 'receivable' })} actionLabel="Registrar por cobrar" />
-      ) : filtered.length === 0 ? (
+      ) : nothingToShow ? (
         <div style={{ textAlign: 'center', padding: '24px 0', color: t.textMuted, fontSize: 13 }}>Ninguna cuenta con este filtro.</div>
-      ) : hasPriorities ? (
-        groupOrder.map(g => groups[g.key].length > 0 && (
-          <div key={g.key}>
-            <PrioritySection label={g.label} color={g.color} t={t} />
-            {groups[g.key].map(r => <ReceivableCard key={r.id} r={r} t={t} settings={settings} onOpenModal={onOpenModal} />)}
-          </div>
-        ))
       ) : (
-        filtered.map(r => <ReceivableCard key={r.id} r={r} t={t} settings={settings} onOpenModal={onOpenModal} />)
+        <>
+          {showActiveGroups && (hasPriorities ? (
+            groupOrder.map(g => groups[g.key].length > 0 && (
+              <div key={g.key}>
+                <PrioritySection label={g.label} color={g.color} t={t} />
+                {groups[g.key].map(r => <ReceivableCard key={r.id} r={r} t={t} settings={settings} onOpenModal={onOpenModal} />)}
+              </div>
+            ))
+          ) : (
+            filteredActive.map(r => <ReceivableCard key={r.id} r={r} t={t} settings={settings} onOpenModal={onOpenModal} />)
+          ))}
+          {showPaidOffSection && paidOffReceivables.length > 0 && (
+            <div>
+              <PrioritySection label="Saldado" color={null} t={t} />
+              {paidOffReceivables.map(r => <ReceivableCard key={r.id} r={r} t={t} settings={settings} onOpenModal={onOpenModal} />)}
+            </div>
+          )}
+        </>
       )}
       <button onClick={()=>onOpenModal({ type: 'receivable' })}
         style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: t.surfaceAlt, border: `1px dashed ${t.border}`, borderRadius: 12, padding: '11px', color: t.accent, fontSize: 13, fontWeight: 600, cursor: 'pointer', marginBottom: 16 }}>
