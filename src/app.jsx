@@ -961,7 +961,7 @@ function InicioScreen({ data, setData, t, goHistorial, openSheet, onQuickAdd, on
     .slice(0, 5);
 
   const byCategory = {};
-  monthTx.filter(t2=>t2.type==='expense').forEach(t2=>{
+  homeTx.filter(t2=>t2.type==='expense').forEach(t2=>{
     byCategory[t2.category] = (byCategory[t2.category]||0) + Number(t2.amount);
   });
   const pieData = Object.entries(byCategory).map(([catId, value]) => {
@@ -983,7 +983,7 @@ function InicioScreen({ data, setData, t, goHistorial, openSheet, onQuickAdd, on
 
   const recent = [...transactions].sort((a,b)=> b.date.localeCompare(a.date) || b.createdAt-a.createdAt).slice(0,5);
 
-  const periodWord = balanceView==='week' ? 'esta semana' : balanceView==='year' ? 'este año' : 'este mes';
+  const periodWord = balanceView==='week' ? 'esta semana' : balanceView==='year' ? 'este año' : balanceView==='total' ? 'en total' : 'este mes';
   let mood = `Vas por buen camino ${periodWord}.`;
   if (income === 0 && expense === 0) mood = 'Registra tu primer movimiento para empezar.';
   else if (savingsRate >= 20) mood = `Vas muy bien ${periodWord} — sigue así.`;
@@ -1180,7 +1180,7 @@ function InicioScreen({ data, setData, t, goHistorial, openSheet, onQuickAdd, on
         {/* Pie chart */}
         {pieData.length > 0 && (
           <div onClick={()=>onNavigate('reportes')} style={{ background: t.glow ? t.surface + 'CC' : t.surface, border: `1px solid ${t.border}`, borderRadius: t.glow ? 20 : 16, padding: '18px 18px 8px', marginTop: 16, cursor: 'pointer', backdropFilter: t.glow ? 'blur(10px)' : undefined, WebkitBackdropFilter: t.glow ? 'blur(10px)' : undefined }}>
-            <div style={{ fontSize: 13.5, fontWeight: 600, color: t.text, marginBottom: 4 }}>Gastos por categoría</div>
+            <div style={{ fontSize: 13.5, fontWeight: 600, color: t.text, marginBottom: 4 }}>Gastos por categoría · {periodWord}</div>
             <div style={{ display: 'flex', alignItems: 'center' }}>
               <div style={{ width: 120, height: 120, flexShrink: 0, filter: t.glow ? `drop-shadow(0 0 10px ${t.accent}35)` : undefined }}>
                 <ResponsiveContainer width="100%" height="100%">
