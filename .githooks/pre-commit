@@ -2,8 +2,8 @@
 # Recompila bundle.js antes de cada commit para que nunca quede desactualizado.
 # El build tambien genera una version nueva y la escribe en sw.js (CACHE_NAME),
 # asi el Service Worker siempre invalida el cache viejo en cada deploy.
-if git diff --cached --name-only | grep -q '^src/'; then
-  echo "Recompilando bundle.js (cambios en src/)..."
+if git diff --cached --name-only | grep -qE '^(src/|index\.html)'; then
+  echo "Recompilando bundle.js (cambios en src/ o index.html)..."
   npm run build
   if [ $? -ne 0 ]; then
     echo "El build falló. Commit cancelado."

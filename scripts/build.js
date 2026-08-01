@@ -2,7 +2,7 @@ import { build } from 'esbuild';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 
-const source = readFileSync('src/app.jsx', 'utf8');
+const source = readFileSync('src/app.jsx', 'utf8') + readFileSync('index.html', 'utf8');
 const hash = createHash('sha256').update(source).digest('hex').slice(0, 8);
 const date = new Date().toISOString().slice(0, 10);
 const version = `${date}-${hash}`;
