@@ -17,13 +17,49 @@
 <meta name="mobile-web-app-capable" content="yes" />
 
 <style>
-  html, body { margin:0; padding:0; background:#12141A; height:100%; }
+  html, body { margin:0; padding:0; background:#12141A; height:100%; overscroll-behavior-y:none; }
   #root { min-height:100vh; }
   #fz-boot { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; color:#9096A3; font-family:-apple-system,sans-serif; font-size:13px; background:#12141A; }
 </style>
 </head>
 <body>
 <div id="root"><div id="fz-boot">Cargando tus finanzas…</div></div>
+
+<script>
+  // Red de seguridad: si algo falla antes de que React monte (o el bundle
+  // lanza una excepción durante el arranque), evitamos que la pantalla se
+  // quede negra/en "Cargando..." para siempre -- mostramos un mensaje con
+  // botón de recarga.
+  (function () {
+    let shown = false;
+    function showRecovery() {
+      if (shown) return;
+      shown = true;
+      const boot = document.getElementById('fz-boot');
+      if (!boot) return;
+      boot.innerHTML = '';
+      boot.style.flexDirection = 'column';
+      boot.style.gap = '12px';
+      boot.style.textAlign = 'center';
+      boot.style.padding = '24px';
+      const msg = document.createElement('div');
+      msg.textContent = 'Algo salió mal al cargar la app.';
+      const btn = document.createElement('button');
+      btn.textContent = 'Recargar';
+      btn.style.cssText = 'padding:10px 20px;border-radius:8px;border:none;background:#4C7EF3;color:#fff;font-size:14px;';
+      btn.onclick = () => window.location.reload();
+      boot.appendChild(msg);
+      boot.appendChild(btn);
+    }
+    window.addEventListener('error', showRecovery);
+    window.addEventListener('unhandledrejection', showRecovery);
+    // Si el bundle nunca terminó de montar (#fz-boot sigue en el DOM) tras
+    // un tiempo razonable, algo se colgó -- ofrecemos recargar.
+    setTimeout(() => {
+      if (document.getElementById('fz-boot')) showRecovery();
+    }, 12000);
+  })();
+</script>
 
 <script>
   // Registrar el service worker para que la app funcione offline una vez instalada.
@@ -46,8 +82,10 @@
       // de camino y el usuario ve el prompt de biometría aparecer y desaparecer.
       const doReload = () => { reloaded = true; window.location.reload(); };
       if (window.__fzAuthBusy) {
+        let waited = 0;
         const check = setInterval(() => {
-          if (!window.__fzAuthBusy) { clearInterval(check); doReload(); }
+          waited += 250;
+          if (!window.__fzAuthBusy || waited >= 10000) { clearInterval(check); doReload(); }
         }, 250);
       } else {
         doReload();
