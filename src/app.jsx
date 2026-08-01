@@ -970,14 +970,20 @@ function InicioScreen({ data, setData, t, goHistorial, openSheet, onQuickAdd, on
   }).sort((a,b)=>b.value-a.value);
 
   const trend = [];
+  let trendHasProjection = false;
   for (let i = 5; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const key = `${d.getFullYear()}-${pad(d.getMonth()+1)}`;
     const txs = transactions.filter(tx => monthKeyOf(tx.date) === key);
+    const daysInMonth = new Date(d.getFullYear(), d.getMonth()+1, 0).getDate();
+    const daysElapsed = i === 0 ? Math.max(1, now.getDate()) : daysInMonth;
+    const isProjected = daysElapsed < daysInMonth;
+    const factor = isProjected ? daysInMonth / daysElapsed : 1;
+    if (isProjected) trendHasProjection = true;
     trend.push({
-      label: MONTHS_SHORT[d.getMonth()],
-      Ingresos: txs.filter(t2=>t2.type==='income').reduce((s,t2)=>s+Number(t2.amount),0),
-      Gastos: txs.filter(t2=>t2.type==='expense').reduce((s,t2)=>s+Number(t2.amount),0),
+      label: MONTHS_SHORT[d.getMonth()] + (isProjected ? '*' : ''),
+      Ingresos: txs.filter(t2=>t2.type==='income').reduce((s,t2)=>s+Number(t2.amount),0) * factor,
+      Gastos: txs.filter(t2=>t2.type==='expense').reduce((s,t2)=>s+Number(t2.amount),0) * factor,
     });
   }
 
@@ -1236,6 +1242,9 @@ function InicioScreen({ data, setData, t, goHistorial, openSheet, onQuickAdd, on
               </AreaChart>
             </ResponsiveContainer>
           </div>
+          {trendHasProjection && (
+            <div style={{ fontSize: 10.5, color: t.textMuted, textAlign: 'right', padding: '2px 10px 6px' }}>* mes en curso, proyectado al ritmo actual</div>
+          )}
         </div>
 
         {/* Recent transactions */}
@@ -2003,13 +2012,19 @@ function ReportesScreen({ data, t }) {
 
   const now = new Date();
   const trend = [];
+  let trendHasProjection = false;
   for (let i=5;i>=0;i--) {
     const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
     const k = `${d.getFullYear()}-${pad(d.getMonth()+1)}`;
     const txs = transactions.filter(tx=>monthKeyOf(tx.date)===k);
-    const ing = txs.filter(t2=>t2.type==='income').reduce((s,t2)=>s+Number(t2.amount),0);
-    const gas = txs.filter(t2=>t2.type==='expense').reduce((s,t2)=>s+Number(t2.amount),0);
-    trend.push({ label: MONTHS_SHORT[d.getMonth()], Ingresos: ing, Gastos: gas, Ahorro: ing-gas });
+    const daysInMonth = new Date(d.getFullYear(), d.getMonth()+1, 0).getDate();
+    const daysElapsed = i===0 ? Math.max(1, now.getDate()) : daysInMonth;
+    const isProjected = daysElapsed < daysInMonth;
+    const factor = isProjected ? daysInMonth / daysElapsed : 1;
+    if (isProjected) trendHasProjection = true;
+    const ing = txs.filter(t2=>t2.type==='income').reduce((s,t2)=>s+Number(t2.amount),0) * factor;
+    const gas = txs.filter(t2=>t2.type==='expense').reduce((s,t2)=>s+Number(t2.amount),0) * factor;
+    trend.push({ label: MONTHS_SHORT[d.getMonth()] + (isProjected ? '*' : ''), Ingresos: ing, Gastos: gas, Ahorro: ing-gas });
   }
 
   const netWorthTrend = [];
@@ -2179,6 +2194,9 @@ function ReportesScreen({ data, t }) {
               </AreaChart>
             </ResponsiveContainer>
           </div>
+          {trendHasProjection && (
+            <div style={{ fontSize: 10.5, color: t.textMuted, textAlign: 'right', padding: '2px 10px 0' }}>* mes en curso, proyectado al ritmo actual</div>
+          )}
         </div>
 
         <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 16, padding: '18px 12px 8px', marginBottom: 16 }}>
