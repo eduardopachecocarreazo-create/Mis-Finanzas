@@ -696,6 +696,20 @@ function nextFutureDueDate(rec) {
   return d;
 }
 
+// Cursor inicial de un recurrente nuevo: si la fecha de inicio quedó en el pasado
+// (p.ej. "empezó el 15 del mes pasado" para registrar algo que se paga a futuro),
+// no debe aparecer "pendiente" por ciclos anteriores a hoy — arrancamos el cursor
+// en la primera ocurrencia futura (o en hoy mismo, si justo vence hoy).
+function firstDueDateOnCreate(startDate, frequency, dayOfMonth) {
+  const today = todayISO();
+  let d = startDate;
+  let guard = 0;
+  while (d < today && guard++ < MAX_OCCURRENCE_SCAN) {
+    d = calculateNextDate(d, frequency, dayOfMonth);
+  }
+  return d;
+}
+
 function dueLabel(dateStr) {
   const n = daysUntil(dateStr);
   if (n === null) return '';
@@ -3075,7 +3089,7 @@ function RecurringModal({ t, categories, accounts, settings, initial, onSave, on
       lastPaidDate: initial?.lastPaidDate || null,
       unsubscribedAt: initial?.unsubscribedAt || null,
       active: initial ? initial.active : true,
-      nextDueDate: initial?.nextDueDate || startDate
+      nextDueDate: initial?.nextDueDate || firstDueDateOnCreate(startDate, frequency, usesDayOfMonth && dayOfMonth ? Number(dayOfMonth) : null)
     });
   };
 
