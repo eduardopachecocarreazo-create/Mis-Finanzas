@@ -324,6 +324,18 @@ const PALETTES = [
 
 const MONTHS_ES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 const MONTHS_SHORT = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+// Con pocos días transcurridos, proyectar linealmente al mes completo dispara el monto de forma
+// irreal (p.ej. día 2 de un mes de 31 días multiplica x15.5). Exigimos un mínimo de días
+// transcurridos y limitamos el factor máximo para que la proyección sea razonable.
+const MIN_DAYS_FOR_PROJECTION = 5;
+const MAX_PROJECTION_FACTOR = 3;
+function getMonthProjectionFactor(daysElapsed, daysInMonth) {
+  if (daysElapsed >= daysInMonth || daysElapsed < MIN_DAYS_FOR_PROJECTION) {
+    return { factor: 1, isProjected: false };
+  }
+  const factor = Math.min(daysInMonth / daysElapsed, MAX_PROJECTION_FACTOR);
+  return { factor, isProjected: true };
+}
 const CURRENCIES = ['COP','USD','EUR','MXN','ARS','CLP','PEN'];
 
 /* ---------------------------------- HELPERS ---------------------------------- */
@@ -977,8 +989,7 @@ function InicioScreen({ data, setData, t, goHistorial, openSheet, onQuickAdd, on
     const txs = transactions.filter(tx => monthKeyOf(tx.date) === key);
     const daysInMonth = new Date(d.getFullYear(), d.getMonth()+1, 0).getDate();
     const daysElapsed = i === 0 ? Math.max(1, now.getDate()) : daysInMonth;
-    const isProjected = daysElapsed < daysInMonth;
-    const factor = isProjected ? daysInMonth / daysElapsed : 1;
+    const { factor, isProjected } = getMonthProjectionFactor(daysElapsed, daysInMonth);
     if (isProjected) trendHasProjection = true;
     trend.push({
       label: MONTHS_SHORT[d.getMonth()] + (isProjected ? '*' : ''),
@@ -2019,8 +2030,7 @@ function ReportesScreen({ data, t }) {
     const txs = transactions.filter(tx=>monthKeyOf(tx.date)===k);
     const daysInMonth = new Date(d.getFullYear(), d.getMonth()+1, 0).getDate();
     const daysElapsed = i===0 ? Math.max(1, now.getDate()) : daysInMonth;
-    const isProjected = daysElapsed < daysInMonth;
-    const factor = isProjected ? daysInMonth / daysElapsed : 1;
+    const { factor, isProjected } = getMonthProjectionFactor(daysElapsed, daysInMonth);
     if (isProjected) trendHasProjection = true;
     const ing = txs.filter(t2=>t2.type==='income').reduce((s,t2)=>s+Number(t2.amount),0) * factor;
     const gas = txs.filter(t2=>t2.type==='expense').reduce((s,t2)=>s+Number(t2.amount),0) * factor;
