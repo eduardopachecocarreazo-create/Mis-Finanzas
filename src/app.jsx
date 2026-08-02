@@ -460,6 +460,7 @@ function getAccountBalance(accountId, transactions, accounts) {
 function isoDate(d) { return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
 
 const PERIOD_OPTIONS = [
+  { value: 'day', label: 'Hoy' },
   { value: 'week', label: 'Semana' },
   { value: 'month', label: 'Mes' },
   { value: 'quarter', label: 'Trimestre' },
@@ -473,6 +474,12 @@ function getPeriodRange(periodType, offset, customFrom, customTo) {
     const from = customFrom || todayISO();
     const to = customTo || todayISO();
     return { from, to, label: `${from} → ${to}` };
+  }
+  if (periodType === 'day') {
+    const ref = new Date(now); ref.setDate(ref.getDate() + offset);
+    const iso = isoDate(ref);
+    const label = offset === 0 ? 'Hoy' : offset === -1 ? 'Ayer' : offset === 1 ? 'Mañana' : `${ref.getDate()} ${MONTHS_SHORT[ref.getMonth()]}`;
+    return { from: iso, to: iso, label };
   }
   if (periodType === 'week') {
     const ref = new Date(now); ref.setDate(ref.getDate() + offset*7);

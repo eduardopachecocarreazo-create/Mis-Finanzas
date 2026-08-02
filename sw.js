@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mis-finanzas-2026-08-02-a2020825';
+const CACHE_NAME = 'mis-finanzas-2026-08-02-ccb9f6c6';
 
 // Archivos propios de la app (app shell)
 const APP_SHELL = [
