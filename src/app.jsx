@@ -856,6 +856,7 @@ function MoneyInput({ value, onChange, placeholder, autoFocus, style }) {
   const display = (value === '' || value === null || value === undefined) ? '' : groupDigits(String(value).replace(/[^\d]/g,''));
   return (
     <input type="text" inputMode="numeric" autoFocus={autoFocus} value={display} placeholder={placeholder}
+      onFocus={e=>e.target.select()}
       onChange={e=>onChange(e.target.value.replace(/[^\d]/g,'').replace(/^0+(?=\d)/,''))}
       style={style} />
   );
@@ -4198,6 +4199,27 @@ function App() {
       try { await window.storage.set(STORAGE_KEY, JSON.stringify(data), false); } catch (e) { /* no-op */ }
     })();
   }, [data, loaded]);
+
+  // Android suspende/mata la pestaña de la PWA al salir mucho más agresivo que iOS,
+  // así que una edición justo antes de salir (p. ej. corregir el saldo inicial de una
+  // cuenta) puede perderse si el efecto de guardado de arriba no alcanza a ejecutarse
+  // a tiempo. dataRef siempre apunta al estado más reciente para poder forzar un
+  // guardado síncrono apenas la pestaña deja de estar visible o se va a cerrar.
+  const dataRef = useRef(data);
+  useEffect(() => { dataRef.current = data; }, [data]);
+  useEffect(() => {
+    const flush = () => {
+      if (!loaded) return;
+      try { window.storage.set(STORAGE_KEY, JSON.stringify(dataRef.current), false); } catch (e) { /* no-op */ }
+    };
+    const onVisibility = () => { if (document.visibilityState === 'hidden') flush(); };
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('pagehide', flush);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pagehide', flush);
+    };
+  }, [loaded]);
 
   useEffect(() => {
     if (!loaded) return;
