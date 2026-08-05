@@ -105,6 +105,9 @@ const FREQUENCIES = [
   { value: 'yearly', label: 'Anual' },
 ];
 
+const FREQUENCY_UNIT_LABEL = { daily: 'día', weekly: 'semana', biweekly: 'quincena', monthly: 'mes', bimonthly: 'bimestre', quarterly: 'trimestre', yearly: 'año' };
+const FREQUENCY_UNIT_LABEL_PLURAL = { daily: 'días', weekly: 'semanas', biweekly: 'quincenas', monthly: 'meses', bimonthly: 'bimestres', quarterly: 'trimestres', yearly: 'años' };
+
 const GOAL_ICON_OPTIONS = ['Target','Plane','Gift','PiggyBank','Home','Laptop','GraduationCap','Heart','Dumbbell','Car','MoreHorizontal'];
 
 /* -------------------------- SUSCRIPCIONES: ICONOS -------------------------- */
@@ -777,9 +780,9 @@ function getDebtStats(debt) {
   const balance = Number(debt.currentBalance) || 0;
   const percentPaid = original > 0 ? Math.min(100, ((original - balance) / original) * 100) : 0;
   const minPayment = Number(debt.minimumPayment) || 0;
-  const monthsRemaining = minPayment > 0 ? Math.ceil(balance / minPayment) : null;
-  const totalInterest = (monthsRemaining && minPayment > 0) ? Math.max(0, (monthsRemaining * minPayment) - balance) : null;
-  return { percentPaid, monthsRemaining, totalInterest };
+  const periodsRemaining = minPayment > 0 ? Math.ceil(balance / minPayment) : null;
+  const totalInterest = (periodsRemaining && minPayment > 0) ? Math.max(0, (periodsRemaining * minPayment) - balance) : null;
+  return { percentPaid, periodsRemaining, totalInterest };
 }
 
 function getReceivableStats(receivable) {
@@ -1634,8 +1637,8 @@ function DebtCard({ debt, t, settings, onOpenModal }) {
       {!paidOff && (
         <>
           <div style={{ display: 'flex', gap: 12, marginTop: 10, fontSize: 11.5, color: t.textMuted, flexWrap: 'wrap' }}>
-            {debt.minimumPayment > 0 && <span>Cuota: {formatMoney(debt.minimumPayment, settings.currency)}/mes</span>}
-            {stats.monthsRemaining !== null && <span>{stats.monthsRemaining} meses restantes</span>}
+            {debt.minimumPayment > 0 && <span>Cuota: {formatMoney(debt.minimumPayment, settings.currency)}/{FREQUENCY_UNIT_LABEL[debt.frequency || 'monthly']}</span>}
+            {stats.periodsRemaining !== null && <span>{stats.periodsRemaining} {stats.periodsRemaining === 1 ? FREQUENCY_UNIT_LABEL[debt.frequency || 'monthly'] : FREQUENCY_UNIT_LABEL_PLURAL[debt.frequency || 'monthly']} restantes</span>}
             {stats.totalInterest !== null && <span>≈{formatMoney(stats.totalInterest, settings.currency)} en intereses</span>}
           </div>
           <button onClick={()=>onOpenModal({ type: 'debtPayment', debt })}
@@ -3355,11 +3358,13 @@ function DebtModal({ t, accounts, settings, initial, onSave, onDelete, onClose }
   const [currentBalance, setCurrentBalance] = useState(initial?.currentBalance ?? '');
   const [interestRate, setInterestRate] = useState(initial?.interestRate ?? '');
   const [minimumPayment, setMinimumPayment] = useState(initial?.minimumPayment ?? '');
+  const [frequency, setFrequency] = useState(initial?.frequency || 'monthly');
   const [dueDate, setDueDate] = useState(initial?.dueDate ?? '');
   const [startDate, setStartDate] = useState(initial?.startDate || todayISO());
   const [linkedAccountId, setLinkedAccountId] = useState(initial?.linkedAccountId || '');
   const [note, setNote] = useState(initial?.note || '');
   const [priority, setPriority] = useState(normalizePriority(initial?.priority));
+  const usesDayOfMonth = ['monthly','bimonthly','quarterly'].includes(frequency);
   const canSave = name.trim().length > 0 && Number(originalAmount) > 0;
 
   const chooseType = (val) => {
@@ -3377,7 +3382,8 @@ function DebtModal({ t, accounts, settings, initial, onSave, onDelete, onClose }
       currentBalance: currentBalance !== '' ? Number(currentBalance) : Number(originalAmount),
       interestRate: interestRate !== '' ? Number(interestRate) : null,
       minimumPayment: minimumPayment !== '' ? Number(minimumPayment) : null,
-      dueDate: dueDate !== '' ? Number(dueDate) : null,
+      frequency,
+      dueDate: usesDayOfMonth && dueDate !== '' ? Number(dueDate) : null,
       startDate,
       linkedAccountId: linkedAccountId || null,
       note: note.trim(),
@@ -3454,17 +3460,25 @@ function DebtModal({ t, accounts, settings, initial, onSave, onDelete, onClose }
         </div>
       </div>
 
+      <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Frecuencia de pago</div>
+      <select value={frequency} onChange={e=>setFrequency(e.target.value)}
+        style={{ width: '100%', marginBottom: 14, padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'var(--font-body)' }}>
+        {FREQUENCIES.map(f=><option key={f.value} value={f.value}>{f.label}</option>)}
+      </select>
+
       <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Día de pago</div>
-          <input type="number" min="1" max="31" value={dueDate} onChange={e=>setDueDate(e.target.value)} placeholder="1-31"
-            style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'var(--font-body)', outline: 'none' }} />
-        </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Fecha inicio</div>
           <input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)}
             style={{ width: '100%', padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13, fontFamily: 'var(--font-body)' }} />
         </div>
+        {usesDayOfMonth && (
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Día de pago</div>
+            <input type="number" min="1" max="31" value={dueDate} onChange={e=>setDueDate(e.target.value)} placeholder="1-31"
+              style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'var(--font-body)', outline: 'none' }} />
+          </div>
+        )}
       </div>
 
       <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Cuenta vinculada (opcional)</div>
@@ -3582,11 +3596,13 @@ function ReceivableModal({ t, accounts, settings, initial, onSave, onDelete, onC
   const [color, setColor] = useState(initial?.color || COLOR_OPTIONS[0]);
   const [originalAmount, setOriginalAmount] = useState(initial?.originalAmount ?? '');
   const [currentBalance, setCurrentBalance] = useState(initial?.currentBalance ?? '');
+  const [frequency, setFrequency] = useState(initial?.frequency || 'monthly');
   const [dueDate, setDueDate] = useState(initial?.dueDate ?? '');
   const [startDate, setStartDate] = useState(initial?.startDate || todayISO());
   const [linkedAccountId, setLinkedAccountId] = useState(initial?.linkedAccountId || '');
   const [note, setNote] = useState(initial?.note || '');
   const [priority, setPriority] = useState(normalizePriority(initial?.priority));
+  const usesDayOfMonth = ['monthly','bimonthly','quarterly'].includes(frequency);
   const canSave = name.trim().length > 0 && Number(originalAmount) > 0;
 
   const chooseType = (val) => {
@@ -3602,7 +3618,8 @@ function ReceivableModal({ t, accounts, settings, initial, onSave, onDelete, onC
       name: name.trim(), type, icon, color, priority,
       originalAmount: Number(originalAmount),
       currentBalance: currentBalance !== '' ? Number(currentBalance) : Number(originalAmount),
-      dueDate: dueDate !== '' ? Number(dueDate) : null,
+      frequency,
+      dueDate: usesDayOfMonth && dueDate !== '' ? Number(dueDate) : null,
       startDate,
       linkedAccountId: linkedAccountId || null,
       note: note.trim(),
@@ -3666,17 +3683,25 @@ function ReceivableModal({ t, accounts, settings, initial, onSave, onDelete, onC
         </div>
       </div>
 
+      <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Frecuencia de cobro</div>
+      <select value={frequency} onChange={e=>setFrequency(e.target.value)}
+        style={{ width: '100%', marginBottom: 14, padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'var(--font-body)' }}>
+        {FREQUENCIES.map(f=><option key={f.value} value={f.value}>{f.label}</option>)}
+      </select>
+
       <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Día de cobro</div>
-          <input type="number" min="1" max="31" value={dueDate} onChange={e=>setDueDate(e.target.value)} placeholder="1-31"
-            style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'var(--font-body)', outline: 'none' }} />
-        </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Fecha inicio</div>
           <input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)}
             style={{ width: '100%', padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13, fontFamily: 'var(--font-body)' }} />
         </div>
+        {usesDayOfMonth && (
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Día de cobro</div>
+            <input type="number" min="1" max="31" value={dueDate} onChange={e=>setDueDate(e.target.value)} placeholder="1-31"
+              style={{ width: '100%', padding: '11px 12px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 13.5, fontFamily: 'var(--font-body)', outline: 'none' }} />
+          </div>
+        )}
       </div>
 
       <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Cuenta vinculada (opcional)</div>
