@@ -3561,7 +3561,7 @@ function DebtModal({ t, accounts, settings, initial, onSave, onDelete, onClose }
 function AdjustPaymentModal({ t, accounts, rec, dueDate, onConfirm, onClose }) {
   const activeAccounts = accounts.filter(a=>!a.archived);
   const [amount, setAmount] = useState(rec.amount ?? '');
-  const [date, setDate] = useState(dueDate || todayISO());
+  const [date, setDate] = useState(todayISO()); // fecha real del pago = hoy, no la de vencimiento
   const [accountId, setAccountId] = useState(rec.accountId || activeAccounts[0]?.id || '');
   const canSave = Number(amount) > 0 && !!accountId && !!date;
 
@@ -4339,7 +4339,11 @@ function App() {
 
       const amount = Number(o.amount != null && o.amount !== '' ? o.amount : cur.amount) || 0;
       if (amount <= 0) return d;
-      const paidDate = o.date || dueDate;
+      // El pago se registra con la fecha en que el usuario confirma, no con la de
+      // vencimiento: si pagas la suscripcion 3 dias tarde, el movimiento debe caer
+      // en el dia real del pago. `dueDate` se sigue guardando en recurringDueDate
+      // para la idempotencia y el avance del cursor.
+      const paidDate = o.date || todayISO();
 
       const tx = {
         id: uid(), createdAt: Date.now(), type: cur.type, amount,
