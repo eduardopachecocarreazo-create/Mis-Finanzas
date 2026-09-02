@@ -521,6 +521,69 @@ function getPrevPeriodRange(periodType, offset, customFrom, customTo) {
   return getPeriodRange(periodType, offset-1, customFrom, customTo);
 }
 
+// Genera los "buckets" (tramos) del gráfico de tendencia según el período elegido
+// arriba en Reportes (día/semana/mes/trimestre/año/personalizado), en vez de
+// mostrar siempre los últimos 6 meses sin importar qué filtro esté activo.
+function shortBucketLabel(periodType, range) {
+  const fromD = new Date(range.from + 'T00:00:00');
+  if (periodType === 'day' || periodType === 'week') return `${fromD.getDate()} ${MONTHS_SHORT[fromD.getMonth()]}`;
+  if (periodType === 'month') return MONTHS_SHORT[fromD.getMonth()];
+  return range.label;
+}
+
+function getTrendBuckets(periodType, offset, customFrom, customTo) {
+  if (periodType === 'custom') {
+    let fromStr = customFrom || todayISO();
+    let toStr = customTo || todayISO();
+    if (fromStr > toStr) { const tmp = fromStr; fromStr = toStr; toStr = tmp; }
+    const totalDays = Math.round((new Date(toStr + 'T00:00:00') - new Date(fromStr + 'T00:00:00')) / 86400000) + 1;
+    const stepDays = totalDays <= 14 ? 1 : totalDays <= 90 ? 7 : totalDays <= 400 ? 30 : 365;
+    const buckets = [];
+    let cursor = new Date(fromStr + 'T00:00:00');
+    while (isoDate(cursor) <= toStr && buckets.length < 24) {
+      const bFrom = isoDate(cursor);
+      const bToDate = new Date(cursor); bToDate.setDate(bToDate.getDate() + stepDays - 1);
+      const bTo = isoDate(bToDate) > toStr ? toStr : isoDate(bToDate);
+      buckets.push({ from: bFrom, to: bTo, label: `${cursor.getDate()} ${MONTHS_SHORT[cursor.getMonth()]}` });
+      cursor.setDate(cursor.getDate() + stepDays);
+    }
+    return buckets.length ? buckets : [{ from: fromStr, to: toStr, label: `${fromStr} → ${toStr}` }];
+  }
+  const COUNT = 6;
+  const buckets = [];
+  for (let i = COUNT - 1; i >= 0; i--) {
+    const r = getPeriodRange(periodType, offset - i, customFrom, customTo);
+    buckets.push({ from: r.from, to: r.to, label: shortBucketLabel(periodType, r) });
+  }
+  return buckets;
+}
+
+// Proyección genérica de un tramo aún no concluido (reutiliza el mismo tope y
+// mínimo de días que getMonthProjectionFactor para no disparar el eje con
+// tramos que recién empiezan).
+function getBucketProjectionFactor(fromStr, toStr, todayStr) {
+  if (fromStr > todayStr) return { factor: 1, isProjected: false };
+  const totalDays = Math.round((new Date(toStr + 'T00:00:00') - new Date(fromStr + 'T00:00:00')) / 86400000) + 1;
+  const rawElapsed = Math.round((new Date(todayStr + 'T00:00:00') - new Date(fromStr + 'T00:00:00')) / 86400000) + 1;
+  const elapsedDays = Math.min(rawElapsed, totalDays);
+  return getMonthProjectionFactor(elapsedDays, totalDays);
+}
+
+const TREND_SUBTITLE = {
+  day: 'últimos 6 días',
+  week: 'últimas 6 semanas',
+  month: 'últimos 6 meses',
+  quarter: 'últimos 6 trimestres',
+  year: 'últimos 6 años',
+};
+const TREND_PROJECTION_NOTE = {
+  week: '* semana en curso, proyectada al ritmo actual',
+  month: '* mes en curso, proyectado al ritmo actual',
+  quarter: '* trimestre en curso, proyectado al ritmo actual',
+  year: '* año en curso, proyectado al ritmo actual',
+  custom: '* tramo en curso, proyectado al ritmo actual',
+};
+
 function getNetWorthAt(dateStr, accounts, transactions) {
   return accounts.filter(a=>a.includeInTotal!==false && !a.archived).reduce((sum,acc)=>{
     let balance = Number(acc.initialBalance)||0;
@@ -2046,28 +2109,20 @@ function ReportesScreen({ data, t }) {
     return { catId, name: cat?cat.name:'Otros', current, previous, pct };
   }).sort((a,b)=>b.current-a.current);
 
-  const now = new Date();
-  const trend = [];
+  const today = todayISO();
+  const trendBuckets = getTrendBuckets(periodType, offset, customFrom, customTo);
   let trendHasProjection = false;
-  for (let i=5;i>=0;i--) {
-    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
-    const k = `${d.getFullYear()}-${pad(d.getMonth()+1)}`;
-    const txs = transactions.filter(tx=>monthKeyOf(tx.date)===k);
-    const daysInMonth = new Date(d.getFullYear(), d.getMonth()+1, 0).getDate();
-    const daysElapsed = i===0 ? Math.max(1, now.getDate()) : daysInMonth;
-    const { factor, isProjected } = getMonthProjectionFactor(daysElapsed, daysInMonth);
+  const trend = trendBuckets.map(b => {
+    const txs = transactions.filter(tx => tx.date >= b.from && tx.date <= b.to);
+    const { factor, isProjected } = getBucketProjectionFactor(b.from, b.to, today);
     if (isProjected) trendHasProjection = true;
     const ing = txs.filter(t2=>t2.type==='income').reduce((s,t2)=>s+Number(t2.amount),0) * factor;
     const gas = txs.filter(t2=>t2.type==='expense').reduce((s,t2)=>s+Number(t2.amount),0) * factor;
-    trend.push({ label: MONTHS_SHORT[d.getMonth()] + (isProjected ? '*' : ''), Ingresos: ing, Gastos: gas, Ahorro: ing-gas });
-  }
+    return { label: b.label + (isProjected ? '*' : ''), Ingresos: ing, Gastos: gas, Ahorro: ing-gas };
+  });
+  const trendSubtitle = periodType === 'custom' ? range.label : TREND_SUBTITLE[periodType];
 
-  const netWorthTrend = [];
-  for (let i=5;i>=0;i--) {
-    const d = new Date(now.getFullYear(), now.getMonth()-i+1, 0);
-    const dStr = isoDate(d);
-    netWorthTrend.push({ label: MONTHS_SHORT[d.getMonth()], Patrimonio: getNetWorthAt(dStr, accounts, allTransactions) });
-  }
+  const netWorthTrend = trendBuckets.map(b => ({ label: b.label, Patrimonio: getNetWorthAt(b.to, accounts, allTransactions) }));
 
   const topGastos = [...periodTx].filter(t2=>t2.type==='expense').sort((a,b)=>Number(b.amount)-Number(a.amount)).slice(0,10);
 
@@ -2204,7 +2259,7 @@ function ReportesScreen({ data, t }) {
         )}
 
         <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 16, padding: '18px 12px 8px', marginBottom: 16 }}>
-          <div style={{ fontSize: 13.5, fontWeight: 600, color: t.text, marginBottom: 8, paddingLeft: 6 }}>Flujo de caja neto · últimos 6 meses</div>
+          <div style={{ fontSize: 13.5, fontWeight: 600, color: t.text, marginBottom: 8, paddingLeft: 6 }}>Flujo de caja neto · {trendSubtitle}</div>
           <div style={{ width: '100%', height: 150, filter: t.glow ? `drop-shadow(0 0 10px ${t.accent}40)` : undefined }}>
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={trend} margin={{ top: 8, right: 10, left: -4, bottom: 0 }}>
@@ -2230,7 +2285,7 @@ function ReportesScreen({ data, t }) {
             </ResponsiveContainer>
           </div>
           {trendHasProjection && (
-            <div style={{ fontSize: 10.5, color: t.textMuted, textAlign: 'right', padding: '2px 10px 0' }}>* mes en curso, proyectado al ritmo actual</div>
+            <div style={{ fontSize: 10.5, color: t.textMuted, textAlign: 'right', padding: '2px 10px 0' }}>{TREND_PROJECTION_NOTE[periodType] || TREND_PROJECTION_NOTE.custom}</div>
           )}
         </div>
 
