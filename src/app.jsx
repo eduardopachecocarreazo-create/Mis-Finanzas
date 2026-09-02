@@ -441,6 +441,18 @@ function formatDayHeader(dateStr) {
   if (dd.getTime() === yesterday.getTime()) return 'Ayer';
   return dd.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' });
 }
+// Rango de fechas en formato corto para etiquetas ("3 Sep 2026").
+function formatShortDate(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  if (isNaN(d)) return dateStr;
+  return `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]} ${d.getFullYear()}`;
+}
+function rangeLabelFor(from, to) {
+  if (from && to) return from === to ? formatShortDate(from) : `${formatShortDate(from)} – ${formatShortDate(to)}`;
+  if (from) return `desde ${formatShortDate(from)}`;
+  if (to) return `hasta ${formatShortDate(to)}`;
+  return 'todo el historial';
+}
 function monthLabel(year, month) { return `${MONTHS_ES[month][0].toUpperCase()}${MONTHS_ES[month].slice(1)} ${year}`; }
 
 function getAccountBalance(accountId, transactions, accounts) {
@@ -469,6 +481,15 @@ const PERIOD_OPTIONS = [
   { value: 'quarter', label: 'Trimestre' },
   { value: 'year', label: 'Año' },
   { value: 'custom', label: 'Personalizado' },
+];
+
+// Atajos del rango de fechas del Historial. Se declaran como funciones porque el
+// rango se calcula al tocar (no al cargar el módulo).
+const DATE_SHORTCUTS = [
+  { label: 'Este mes', range: () => getPeriodRange('month', 0) },
+  { label: 'Mes pasado', range: () => getPeriodRange('month', -1) },
+  { label: 'Este año', range: () => getPeriodRange('year', 0) },
+  { label: 'Todo', range: () => ({ from: '', to: '' }) },
 ];
 
 function getPeriodRange(periodType, offset, customFrom, customTo) {
@@ -1396,16 +1417,20 @@ function EmptyState({ t, text, onAction, actionLabel = 'Agregar movimiento' }) {
 }
 
 /* ---------------------------------- HISTORIAL ---------------------------------- */
-function HistorialScreen({ data, t, onEdit }) {
+// `initialFilter` llega cuando se entra desde Reportes (tocar una barra o una fila):
+// siembra los filtros de esta pantalla. App remonta la pantalla con un `key` nuevo
+// cada vez que se navega así, por eso basta con usarlo como estado inicial.
+function HistorialScreen({ data, t, onEdit, initialFilter }) {
   const { transactions, categories, settings, accounts, tags } = data;
+  const f0 = initialFilter || {};
   const [query, setQuery] = useState('');
-  const [filterType, setFilterType] = useState('all');
+  const [filterType, setFilterType] = useState(f0.type || 'all');
   const [showFilters, setShowFilters] = useState(false);
-  const [filterCat, setFilterCat] = useState('all');
-  const [filterAccount, setFilterAccount] = useState('all');
-  const [filterTag, setFilterTag] = useState('all');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  const [filterCat, setFilterCat] = useState(f0.category || 'all');
+  const [filterAccount, setFilterAccount] = useState(f0.accountId || 'all');
+  const [filterTag, setFilterTag] = useState(f0.tag || 'all');
+  const [dateFrom, setDateFrom] = useState(f0.from || '');
+  const [dateTo, setDateTo] = useState(f0.to || '');
   const [amountMin, setAmountMin] = useState('');
   const [amountMax, setAmountMax] = useState('');
   const [sortBy, setSortBy] = useState('date_desc');
@@ -1443,6 +1468,32 @@ function HistorialScreen({ data, t, onEdit }) {
     }
     return b.date.localeCompare(a.date) || b.createdAt-a.createdAt;
   });
+
+  // Totales de lo que se está viendo ahora mismo (todos los filtros aplicados,
+  // incluido el rango de fechas). Las transferencias no suman ni restan: mueven
+  // dinero entre cuentas propias.
+  const totals = filtered.reduce((acc, tx) => {
+    const v = Number(tx.amount) || 0;
+    if (tx.type === 'income') acc.income += v;
+    else if (tx.type === 'expense') acc.expense += v;
+    return acc;
+  }, { income: 0, expense: 0 });
+  const net = totals.income - totals.expense;
+  const transferTotal = filtered.filter(tx=>tx.type==='transfer').reduce((sum,tx)=>sum+(Number(tx.amount)||0),0);
+  const rangeLabel = rangeLabelFor(dateFrom, dateTo);
+  const showExpenseTotal = filterType === 'all' || filterType === 'expense';
+  const showIncomeTotal = filterType === 'all' || filterType === 'income';
+  const showNetTotal = filterType === 'all' && totals.income > 0 && totals.expense > 0;
+
+  // Filtros activos como pastillas: se ven de un vistazo y se quitan con un toque
+  // (importante al llegar desde Reportes con la categoría ya puesta).
+  const activeChips = [
+    filterCat !== 'all' && { label: categories.find(c=>c.id===filterCat)?.name || 'Categoría', onClear: ()=>setFilterCat('all') },
+    filterAccount !== 'all' && { label: accounts.find(a=>a.id===filterAccount)?.name || 'Cuenta', onClear: ()=>setFilterAccount('all') },
+    filterTag !== 'all' && { label: `#${filterTag}`, onClear: ()=>setFilterTag('all') },
+    (dateFrom || dateTo) && { label: rangeLabel, onClear: ()=>{ setDateFrom(''); setDateTo(''); } },
+    query && { label: `"${query}"`, onClear: ()=>setQuery('') },
+  ].filter(Boolean);
 
   const groupByDate = sortBy === 'date_desc' || sortBy === 'date_asc';
   const groups = {};
@@ -1504,6 +1555,51 @@ function HistorialScreen({ data, t, onEdit }) {
             options={[{value:'all',label:'Todos'},{value:'income',label:'Ingresos'},{value:'expense',label:'Gastos'},{value:'transfer',label:'Transf.'}]} />
         </div>
 
+        <div style={{ background: t.glow ? t.surface + 'CC' : t.surface, border: `1px solid ${t.border}`, borderRadius: 14, padding: '12px 14px', marginBottom: 14,
+          backdropFilter: t.glow ? 'blur(10px)' : undefined, WebkitBackdropFilter: t.glow ? 'blur(10px)' : undefined }}>
+          <div style={{ fontSize: 11, color: t.textMuted, marginBottom: activeChips.length ? 7 : 9 }}>
+            {filtered.length} movimiento{filtered.length===1?'':'s'}{(dateFrom || dateTo) ? '' : ` · ${rangeLabel}`}
+          </div>
+          {activeChips.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 9 }}>
+              {activeChips.map(chip => (
+                <button key={chip.label} onClick={chip.onClear}
+                  style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 8px', borderRadius: 20, cursor: 'pointer',
+                    border: `1px solid ${t.accent}`, background: t.accent+'1F', color: t.accent, fontSize: 11, fontWeight: 600, fontFamily: 'var(--font-body)' }}>
+                  {chip.label}
+                  <Icon name="X" size={11} color={t.accent} />
+                </button>
+              ))}
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 14 }}>
+            {showExpenseTotal && (
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 10, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Gastos</div>
+                <div style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 17, fontWeight: 600, color: t.expense, marginTop: 2, overflow:'hidden', textOverflow:'ellipsis' }}>{formatMoney(totals.expense, settings.currency)}</div>
+              </div>
+            )}
+            {showIncomeTotal && (
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 10, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Ingresos</div>
+                <div style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 17, fontWeight: 600, color: t.income, marginTop: 2, overflow:'hidden', textOverflow:'ellipsis' }}>{formatMoney(totals.income, settings.currency)}</div>
+              </div>
+            )}
+            {showNetTotal && (
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 10, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Neto</div>
+                <div style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 17, fontWeight: 600, color: net>=0?t.income:t.expense, marginTop: 2, overflow:'hidden', textOverflow:'ellipsis' }}>{net>=0?'+':'-'}{formatMoney(Math.abs(net), settings.currency)}</div>
+              </div>
+            )}
+            {filterType==='transfer' && (
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 10, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Transferido</div>
+                <div style={{ fontFamily: 'Fraunces, Georgia, serif', fontSize: 17, fontWeight: 600, color: t.accent, marginTop: 2, overflow:'hidden', textOverflow:'ellipsis' }}>{formatMoney(transferTotal, settings.currency)}</div>
+              </div>
+            )}
+          </div>
+        </div>
+
         {showFilters && (
           <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 14, padding: 14, marginBottom: 16 }}>
             <select value={filterCat} onChange={e=>setFilterCat(e.target.value)}
@@ -1527,6 +1623,19 @@ function HistorialScreen({ data, t, onEdit }) {
             </div>
 
             <div style={{ fontSize: 11, color: t.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Rango de fechas</div>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+              {DATE_SHORTCUTS.map(sc => {
+                const r = sc.range();
+                const on = dateFrom === (r.from || '') && dateTo === (r.to || '');
+                return (
+                  <button key={sc.label} onClick={()=>{ setDateFrom(r.from || ''); setDateTo(r.to || ''); }}
+                    style={{ padding: '5px 10px', borderRadius: 20, cursor: 'pointer', fontSize: 11.5, fontWeight: 600, fontFamily: 'var(--font-body)',
+                      border: `1px solid ${on ? t.accent : t.border}`, background: on ? t.accent+'22' : t.surfaceAlt, color: on ? t.accent : t.textMuted }}>
+                    {sc.label}
+                  </button>
+                );
+              })}
+            </div>
             <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
               <input type="date" value={dateFrom} onChange={e=>setDateFrom(e.target.value)}
                 style={{ flex: 1, padding: '9px 10px', borderRadius: 10, border: `1px solid ${t.border}`, background: t.surfaceAlt, color: t.text, fontSize: 12.5, fontFamily: 'var(--font-body)' }} />
@@ -2049,7 +2158,7 @@ function MetasScreen({ data, t, subTab, setSubTab, onEditBudget, onOpenModal, on
 }
 
 /* ---------------------------------- REPORTES ---------------------------------- */
-function ReportesScreen({ data, t }) {
+function ReportesScreen({ data, t, onDrillDown, onEdit }) {
   const { transactions: allTransactions, categories, settings, accounts, tags } = data;
   const [periodType, setPeriodType] = useState('month');
   const [offset, setOffset] = useState(0);
@@ -2076,21 +2185,21 @@ function ReportesScreen({ data, t }) {
   periodTx.filter(t2=>t2.type==='expense').forEach(t2=>{ byCat[t2.category]=(byCat[t2.category]||0)+Number(t2.amount); });
   const barData = Object.entries(byCat).map(([catId,value])=>{
     const cat = categories.find(c=>c.id===catId);
-    return { name: cat?cat.name:'Otros', value, color: cat?cat.color:t.textMuted };
+    return { id: catId, name: cat?cat.name:'Otros', value, color: cat?cat.color:t.textMuted };
   }).sort((a,b)=>b.value-a.value);
 
   const byIncomeCat = {};
   periodTx.filter(t2=>t2.type==='income').forEach(t2=>{ byIncomeCat[t2.category]=(byIncomeCat[t2.category]||0)+Number(t2.amount); });
   const incomeBarData = Object.entries(byIncomeCat).map(([catId,value])=>{
     const cat = categories.find(c=>c.id===catId);
-    return { name: cat?cat.name:'Otros', value, color: cat?cat.color:t.income };
+    return { id: catId, name: cat?cat.name:'Otros', value, color: cat?cat.color:t.income };
   }).sort((a,b)=>b.value-a.value);
 
   const byAccount = {};
   periodTx.filter(t2=>t2.type==='expense').forEach(t2=>{ byAccount[t2.accountId]=(byAccount[t2.accountId]||0)+Number(t2.amount); });
   const accountBarData = Object.entries(byAccount).map(([accId,value])=>{
     const acc = accounts.find(a=>a.id===accId);
-    return { name: acc?acc.name:'Otra', value, color: acc?acc.color:t.textMuted };
+    return { id: accId, name: acc?acc.name:'Otra', value, color: acc?acc.color:t.textMuted };
   }).sort((a,b)=>b.value-a.value);
 
   // El comparativo por categoría siempre es mes actual vs mes anterior, sin importar
@@ -2108,6 +2217,20 @@ function ReportesScreen({ data, t }) {
     const pct = previous>0 ? ((current-previous)/previous*100) : (current>0?100:0);
     return { catId, name: cat?cat.name:'Otros', current, previous, pct };
   }).sort((a,b)=>b.current-a.current);
+
+  // Tocar una barra o una fila abre el Historial ya filtrado por eso mismo, con el
+  // rango de fechas del período que se está viendo aquí.
+  const drillTo = (patch) => {
+    if (!onDrillDown) return;
+    onDrillDown({ from: range.from, to: range.to, tag: filterTag !== 'all' ? filterTag : 'all', ...patch });
+  };
+  // Recharts entrega el punto tocado en state.activePayload — sirve igual para un
+  // toque sobre la barra que sobre el espacio de su fila.
+  const onBarChartClick = (build) => (state) => {
+    const payload = state && state.activePayload && state.activePayload[0] && state.activePayload[0].payload;
+    if (payload && payload.id) drillTo(build(payload));
+  };
+  const drillHint = 'Toca una barra para ver los movimientos';
 
   const today = todayISO();
   const trendBuckets = getTrendBuckets(periodType, offset, customFrom, customTo);
@@ -2206,10 +2329,12 @@ function ReportesScreen({ data, t }) {
 
         {barData.length>0 && (
           <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 16, padding: '18px 12px 8px', marginBottom: 16 }}>
-            <div style={{ fontSize: 13.5, fontWeight: 600, color: t.text, marginBottom: 8, paddingLeft: 6 }}>Gasto por categoría</div>
-            <div style={{ width: '100%', height: Math.max(120, barData.length*34) }}>
+            <div style={{ fontSize: 13.5, fontWeight: 600, color: t.text, marginBottom: 2, paddingLeft: 6 }}>Gasto por categoría</div>
+            <div style={{ fontSize: 10.5, color: t.textMuted, marginBottom: 8, paddingLeft: 6 }}>{drillHint}</div>
+            <div style={{ width: '100%', height: Math.max(120, barData.length*34), cursor: 'pointer' }}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={barData} layout="vertical" margin={{ top: 0, right: 20, left: 0, bottom: 0 }}>
+                <BarChart data={barData} layout="vertical" margin={{ top: 0, right: 20, left: 0, bottom: 0 }}
+                  onClick={onBarChartClick(p2 => ({ type: 'expense', category: p2.id }))}>
                   <XAxis type="number" hide />
                   <YAxis type="category" dataKey="name" width={92} tick={{ fontSize: 11, fill: t.textMuted }} axisLine={false} tickLine={false} tickFormatter={(v)=>truncateLabel(v, 13)} />
                   <Tooltip formatter={(v)=>formatMoney(v, settings.currency)} contentStyle={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 8, fontSize: 12 }} labelStyle={{ color: t.text }} itemStyle={{ color: t.text }} cursor={{fill: t.surfaceAlt}} />
@@ -2224,10 +2349,12 @@ function ReportesScreen({ data, t }) {
 
         {incomeBarData.length>0 && (
           <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 16, padding: '18px 12px 8px', marginBottom: 16 }}>
-            <div style={{ fontSize: 13.5, fontWeight: 600, color: t.text, marginBottom: 8, paddingLeft: 6 }}>Ingresos por categoría</div>
-            <div style={{ width: '100%', height: Math.max(120, incomeBarData.length*34) }}>
+            <div style={{ fontSize: 13.5, fontWeight: 600, color: t.text, marginBottom: 2, paddingLeft: 6 }}>Ingresos por categoría</div>
+            <div style={{ fontSize: 10.5, color: t.textMuted, marginBottom: 8, paddingLeft: 6 }}>{drillHint}</div>
+            <div style={{ width: '100%', height: Math.max(120, incomeBarData.length*34), cursor: 'pointer' }}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={incomeBarData} layout="vertical" margin={{ top: 0, right: 20, left: 0, bottom: 0 }}>
+                <BarChart data={incomeBarData} layout="vertical" margin={{ top: 0, right: 20, left: 0, bottom: 0 }}
+                  onClick={onBarChartClick(p2 => ({ type: 'income', category: p2.id }))}>
                   <XAxis type="number" hide />
                   <YAxis type="category" dataKey="name" width={92} tick={{ fontSize: 11, fill: t.textMuted }} axisLine={false} tickLine={false} tickFormatter={(v)=>truncateLabel(v, 13)} />
                   <Tooltip formatter={(v)=>formatMoney(v, settings.currency)} contentStyle={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 8, fontSize: 12 }} labelStyle={{ color: t.text }} itemStyle={{ color: t.text }} cursor={{fill: t.surfaceAlt}} />
@@ -2242,10 +2369,12 @@ function ReportesScreen({ data, t }) {
 
         {accountBarData.length>0 && (
           <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 16, padding: '18px 12px 8px', marginBottom: 16 }}>
-            <div style={{ fontSize: 13.5, fontWeight: 600, color: t.text, marginBottom: 8, paddingLeft: 6 }}>Gasto por cuenta</div>
-            <div style={{ width: '100%', height: Math.max(120, accountBarData.length*34) }}>
+            <div style={{ fontSize: 13.5, fontWeight: 600, color: t.text, marginBottom: 2, paddingLeft: 6 }}>Gasto por cuenta</div>
+            <div style={{ fontSize: 10.5, color: t.textMuted, marginBottom: 8, paddingLeft: 6 }}>{drillHint}</div>
+            <div style={{ width: '100%', height: Math.max(120, accountBarData.length*34), cursor: 'pointer' }}>
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={accountBarData} layout="vertical" margin={{ top: 0, right: 20, left: 0, bottom: 0 }}>
+                <BarChart data={accountBarData} layout="vertical" margin={{ top: 0, right: 20, left: 0, bottom: 0 }}
+                  onClick={onBarChartClick(p2 => ({ type: 'expense', accountId: p2.id }))}>
                   <XAxis type="number" hide />
                   <YAxis type="category" dataKey="name" width={92} tick={{ fontSize: 11, fill: t.textMuted }} axisLine={false} tickLine={false} tickFormatter={(v)=>truncateLabel(v, 13)} />
                   <Tooltip formatter={(v)=>formatMoney(v, settings.currency)} contentStyle={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 8, fontSize: 12 }} labelStyle={{ color: t.text }} itemStyle={{ color: t.text }} cursor={{fill: t.surfaceAlt}} />
@@ -2314,7 +2443,9 @@ function ReportesScreen({ data, t }) {
             <div style={{ fontSize: 13.5, fontWeight: 600, color: t.text, marginBottom: 8 }}>Comparativo: mes actual vs mes anterior</div>
             <div style={{ background: t.glow ? t.surface + 'CC' : t.surface, border: `1px solid ${t.border}`, borderRadius: t.glow ? 20 : 16, overflow: 'hidden', backdropFilter: t.glow ? 'blur(10px)' : undefined, WebkitBackdropFilter: t.glow ? 'blur(10px)' : undefined }}>
               {catComparison.map((c,i)=>(
-                <div key={c.catId} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderTop: i===0?'none':`1px solid ${t.border}` }}>
+                <button key={c.catId} className="fz-row-btn"
+                  onClick={()=>drillTo({ type: 'expense', category: c.catId, from: monthRangeNow.from, to: monthRangeNow.to })}
+                  style={{ width: '100%', textAlign: 'left', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderTop: i===0?'none':`1px solid ${t.border}` }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 13, color: t.text, fontWeight: 500 }}>{c.name}</div>
                     <div style={{ fontSize: 11, color: t.textMuted }}>Mes anterior: {formatMoney(c.previous, settings.currency)}</div>
@@ -2326,7 +2457,7 @@ function ReportesScreen({ data, t }) {
                       <span style={{ fontSize: 11, fontWeight: 700, color: c.pct>0?t.expense:t.income }}>{Math.abs(c.pct).toFixed(0)}%</span>
                     </div>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           </div>
@@ -2339,14 +2470,15 @@ function ReportesScreen({ data, t }) {
               {topGastos.map((tx,i)=>{
                 const cat = categories.find(c=>c.id===tx.category);
                 return (
-                  <div key={tx.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderTop: i===0?'none':`1px solid ${t.border}` }}>
+                  <button key={tx.id} className="fz-row-btn" onClick={()=>onEdit && onEdit(tx)}
+                    style={{ width: '100%', textAlign: 'left', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderTop: i===0?'none':`1px solid ${t.border}` }}>
                     <CategoryBadge cat={cat} t={t} size={30} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 13, color: t.text, fontWeight: 500, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{tx.note || (cat?cat.name:'Otros')}</div>
                       <div style={{ fontSize: 11, color: t.textMuted }}>{cat?cat.name:'Otros'}</div>
                     </div>
                     <div style={{ fontSize: 13, fontWeight: 700, color: t.expense }}>{formatMoney(tx.amount, settings.currency)}</div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
@@ -4190,6 +4322,13 @@ function App() {
     try { localStorage.setItem('fz_balance_hidden', balanceHidden ? '1' : '0'); } catch {}
   }, [balanceHidden]);
   const goTo = (nextTab, subTab) => { setTab(nextTab); if (subTab) setMetasSubTab(subTab); };
+  // Filtro con el que se abre el Historial al venir desde Reportes. El `nonce`
+  // remonta la pantalla (key) para que el filtro nuevo reemplace al anterior.
+  const [historialFilter, setHistorialFilter] = useState(null);
+  const openHistorialFiltered = (filter) => {
+    setHistorialFilter({ ...filter, nonce: (historialFilter?.nonce || 0) + 1 });
+    setTab('historial');
+  };
   const [sheet, setSheet] = useState(null); // null | {} (new) | transaction (edit)
   const [modal, setModal] = useState({ type: null });
   const [quickAddCat, setQuickAddCat] = useState(null);
@@ -4438,10 +4577,11 @@ function App() {
           <>
             <div style={{ paddingBottom: 84, minHeight: '100vh' }}>
               {tab==='inicio' && <InicioScreen data={data} setData={setData} t={t} goHistorial={()=>setTab('historial')} openSheet={()=>setSheet({})} onQuickAdd={setQuickAddCat} onNavigate={goTo} balanceHidden={balanceHidden} setBalanceHidden={setBalanceHidden} onOpenModal={setModal} onConfirmRecurring={onConfirmRecurringOneTap} onAdjustRecurring={onAdjustRecurringOpen} onSkipRecurring={skipRecurringOccurrence} onUnsubscribeRecurring={unsubscribeRecurring} />}
-              {tab==='historial' && <HistorialScreen data={data} t={t} onEdit={(tx)=>setSheet(tx)} />}
+              {tab==='historial' && <HistorialScreen key={`hist-${historialFilter ? historialFilter.nonce : 0}`}
+                data={data} t={t} onEdit={(tx)=>setSheet(tx)} initialFilter={historialFilter} />}
               {tab==='presupuestos' && <MetasScreen data={data} t={t} subTab={metasSubTab} setSubTab={setMetasSubTab} onEditBudget={(cat)=>setModal({ type: 'budget', cat })} onOpenModal={setModal}
                 onConfirmRecurring={onConfirmRecurringOneTap} onAdjustRecurring={onAdjustRecurringOpen} onSkipRecurring={skipRecurringOccurrence} onUnsubscribeRecurring={unsubscribeRecurring} onReactivateRecurring={reactivateRecurring} />}
-              {tab==='reportes' && <ReportesScreen data={data} t={t} />}
+              {tab==='reportes' && <ReportesScreen data={data} t={t} onDrillDown={openHistorialFiltered} onEdit={(tx)=>setSheet(tx)} />}
               {tab==='ajustes' && <AjustesScreen data={data} setData={setData} t={t} onOpenModal={setModal} />}
             </div>
 
