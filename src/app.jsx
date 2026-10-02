@@ -2419,6 +2419,37 @@ function ReportesScreen({ data, t, onDrillDown, onEdit }) {
         </div>
 
         <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 16, padding: '18px 12px 8px', marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, paddingLeft: 6, paddingRight: 6 }}>
+            <div style={{ fontSize: 13.5, fontWeight: 600, color: t.text }}>Ingresos vs gastos · {trendSubtitle}</div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <div style={{ width: 7, height: 7, borderRadius: '50%', background: t.income }} />
+                <span style={{ fontSize: 10.5, color: t.textMuted }}>Ingresos</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <div style={{ width: 7, height: 7, borderRadius: '50%', background: t.expense }} />
+                <span style={{ fontSize: 10.5, color: t.textMuted }}>Gastos</span>
+              </div>
+            </div>
+          </div>
+          <div style={{ width: '100%', height: 160 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={trend} margin={{ top: 8, right: 10, left: -4, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={t.border} vertical={false} />
+                <XAxis dataKey="label" tick={{ fontSize: 11, fill: t.textMuted }} axisLine={{ stroke: t.border }} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: t.textMuted }} axisLine={false} tickLine={false} width={38} tickFormatter={formatCompactNumber} />
+                <Tooltip formatter={(v)=>formatMoney(v, settings.currency)} contentStyle={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 8, fontSize: 12 }} labelStyle={{ color: t.text }} itemStyle={{ color: t.text }} cursor={{fill: t.surfaceAlt}} />
+                <Bar dataKey="Ingresos" fill={t.income} radius={[4,4,0,0]} />
+                <Bar dataKey="Gastos" fill={t.expense} radius={[4,4,0,0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          {trendHasProjection && (
+            <div style={{ fontSize: 10.5, color: t.textMuted, textAlign: 'right', padding: '2px 10px 0' }}>{TREND_PROJECTION_NOTE[periodType] || TREND_PROJECTION_NOTE.custom}</div>
+          )}
+        </div>
+
+        <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 16, padding: '18px 12px 8px', marginBottom: 16 }}>
           <div style={{ fontSize: 13.5, fontWeight: 600, color: t.text, marginBottom: 8, paddingLeft: 6 }}>Evolución del patrimonio neto</div>
           <div style={{ width: '100%', height: 130, filter: t.glow ? `drop-shadow(0 0 10px ${t.accent}40)` : undefined }}>
             <ResponsiveContainer width="100%" height="100%">
